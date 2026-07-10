@@ -2,6 +2,7 @@ namespace Ibatech.Services.DTOs.Produto;
 
 internal sealed class ProdutoImportacaoLinhaDto
 {
+    public int NumeroLinha { get; init; }
     public object? Nome { get; init; }
     public object? Tipo { get; init; }
     public object? PrecoCompra { get; init; }

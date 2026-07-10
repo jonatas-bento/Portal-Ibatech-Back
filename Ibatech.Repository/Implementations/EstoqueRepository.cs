@@ -14,4 +14,8 @@ public sealed class EstoqueRepository(IbatechDbContext ctx)
         Guid produtoId, CancellationToken ct = default) =>
         await DbSet
             .FirstOrDefaultAsync(e => e.ProdutoId == produtoId, ct);
+
+    public async Task AddRangeAsync(
+        IEnumerable<Estoque> estoques, CancellationToken ct = default) =>
+        await DbSet.AddRangeAsync(estoques, ct);
 }

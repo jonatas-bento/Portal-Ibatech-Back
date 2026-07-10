@@ -6,4 +6,5 @@ public interface IProdutoRepository : IRepositoryBase<Produto>
     Task<Produto?> ObterComEstoqueAsync(Guid id, CancellationToken ct = default);
     Task<IEnumerable<Produto>> ListarComEstoqueAsync(CancellationToken ct = default);
     Task AdicionarMovimentacaoAsync(MovimentacaoEstoque mov, CancellationToken ct = default);
+    Task AddRangeAsync(IEnumerable<Produto> produtos, CancellationToken ct = default);
 }

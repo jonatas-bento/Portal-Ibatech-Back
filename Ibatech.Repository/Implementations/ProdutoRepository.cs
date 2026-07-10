@@ -27,4 +27,8 @@ public sealed class ProdutoRepository(IbatechDbContext ctx)
     public async Task AdicionarMovimentacaoAsync(
         MovimentacaoEstoque mov, CancellationToken ct = default) =>
         await ctx.Movimentacoes.AddAsync(mov, ct);
+
+    public async Task AddRangeAsync(
+        IEnumerable<Produto> produtos, CancellationToken ct = default) =>
+        await DbSet.AddRangeAsync(produtos, ct);
 }

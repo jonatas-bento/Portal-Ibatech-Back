@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Ibatech.Domain\Ibatech.Domain.csproj" />
+		<ProjectReference Include="..\Ibatech.Repository\Ibatech.Repository.csproj" />
+	</ItemGroup>
+
+</Project>

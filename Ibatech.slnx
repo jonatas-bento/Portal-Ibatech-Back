@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Ibatech.API/Ibatech.API.csproj" />
+  <Project Path="Ibatech.Domain/Ibatech.Domain.csproj" />
+  <Project Path="Ibatech.Infra/Ibatech.Infra.csproj" />
+  <Project Path="Ibatech.Repository/Ibatech.Repository.csproj" />
+  <Project Path="Ibatech.Services/Ibatech.Services.csproj" />
+</Solution>

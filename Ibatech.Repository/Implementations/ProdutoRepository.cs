@@ -31,4 +31,23 @@ public sealed class ProdutoRepository(IbatechDbContext ctx)
     public async Task AddRangeAsync(
         IEnumerable<Produto> produtos, CancellationToken ct = default) =>
         await DbSet.AddRangeAsync(produtos, ct);
+
+    public async Task<IReadOnlyCollection<string>> ObterSkusExistentesAsync(
+        IEnumerable<string> skus, CancellationToken ct = default)
+    {
+        var skusNormalizados = skus
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (skusNormalizados.Count == 0)
+            return Array.Empty<string>();
+
+        return await DbSet
+            .AsNoTracking()
+            .Where(p => p.CodigoSku != null && skusNormalizados.Contains(p.CodigoSku))
+            .Select(p => p.CodigoSku!)
+            .ToListAsync(ct);
+    }
 }

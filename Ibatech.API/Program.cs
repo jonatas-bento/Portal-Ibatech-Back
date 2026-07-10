@@ -8,7 +8,6 @@ using Ibatech.Services.Implementations;
 using Ibatech.Domain.Interfaces.Services;
 using Ibatech.Domain.Interfaces.Repositories;
 using Ibatech.Repository.Implementations;
-using Ibatech.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Ibatech.API;
+using Microsoft.OpenApi.Models;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -109,8 +109,93 @@ builder.Services
             new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
-// ── 8. OpenAPI Nativo .NET 10 ────────────────────────────────────────────────
-builder.Services.AddOpenApi();
+// ── 8. OpenAPI Nativo .NET 9 ────────────────────────────────────────────────
+builder.Services.AddOpenApi(opts =>
+{
+    opts.AddDocumentTransformer((document, context, ct) =>
+    {
+        document.Components ??= new();
+        document.Components.SecuritySchemes.Add("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Insira apenas o token JWT (sem aspas)."
+        });
+
+        document.SecurityRequirements.Add(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            {
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+
+        return Task.CompletedTask;
+    });
+
+    opts.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        var relativePath = context.Description.RelativePath?
+            .Split('?')[0]
+            .Trim('/');
+
+        var isProductImportEndpoint =
+            string.Equals(
+                context.Description.HttpMethod,
+                "POST",
+                StringComparison.OrdinalIgnoreCase)
+            &&
+            string.Equals(
+                relativePath,
+                "api/Produtos/importar",
+                StringComparison.OrdinalIgnoreCase);
+
+        if (!isProductImportEndpoint)
+        {
+            return Task.CompletedTask;
+        }
+
+        operation.RequestBody = new OpenApiRequestBody
+        {
+            Required = true,
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["multipart/form-data"] = new OpenApiMediaType
+                {
+                    Schema = new OpenApiSchema
+                    {
+                        Type = "object",
+                        Required = new HashSet<string>
+                        {
+                            "arquivo"
+                        },
+                        Properties = new Dictionary<string, OpenApiSchema>
+                        {
+                            ["arquivo"] = new OpenApiSchema
+                            {
+                                Type = "string",
+                                Format = "binary",
+                                Description = "Planilha de produtos no formato .xlsx"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return Task.CompletedTask;
+    });
+});
 
 // ── 9. Health Checks ──────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks()
@@ -122,6 +207,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "Ibatech API v1");
+        options.RoutePrefix = "swagger";
+    });
 }
 
 app.UseHttpsRedirection();

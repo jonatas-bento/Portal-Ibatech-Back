@@ -10,7 +10,9 @@ namespace Ibatech.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public sealed class ProdutosController(IProdutoService produtoService) : ControllerBase
+    public sealed class ProdutosController(
+        IProdutoService produtoService,
+        IProdutoImportacaoService produtoImportacaoService) : ControllerBase
     {
         [HttpGet]
         [Authorize(Policy = "Autenticado")]
@@ -88,6 +90,29 @@ namespace Ibatech.API.Controllers
                 // Captura falhas de regra de negócio (ex: Saída maior que a quantidade atual)
                 return BadRequest(new { detail = ex.Message });
             }
+        }
+
+        [HttpPost("importar")]
+        [Authorize(Policy = "AdminOuFuncionario")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ProdutoImportacaoResultadoDto>> Importar(
+            [FromForm] IFormFile arquivo,
+            CancellationToken ct)
+        {
+            if (arquivo == null || arquivo.Length == 0)
+                return BadRequest(new { detail = "O arquivo é obrigatório." });
+
+            await using var stream = arquivo.OpenReadStream();
+            var resultado = await produtoImportacaoService.ImportarAsync(
+                stream,
+                arquivo.FileName,
+                arquivo.Length,
+                ct);
+
+            if (!resultado.Sucesso)
+                return BadRequest(resultado);
+
+            return Ok(resultado);
         }
     }
 }

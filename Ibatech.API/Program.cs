@@ -8,6 +8,7 @@ using Ibatech.Services.Implementations;
 using Ibatech.Domain.Interfaces.Services;
 using Ibatech.Domain.Interfaces.Repositories;
 using Ibatech.Repository.Implementations;
+using Ibatech.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -92,6 +93,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IProjetoService, ProjetoService>();
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
+builder.Services.AddScoped<IProdutoImportacaoService, ProdutoImportacaoService>();
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
 
 // ── 7. Controllers + JSON ─────────────────────────────────────────────────────

@@ -64,7 +64,12 @@ public sealed class UsuariosController(IUsuarioService usuarioService) : Control
             return NoContent();
         }
         catch (KeyNotFoundException) { return NotFound(); }
-        catch (InvalidOperationException ex) { return Conflict(new { detail = ex.Message }); }
+        catch (InvalidOperationException ex)
+        {
+            if (ex.Message == "Senha atual incorreta.")
+                return BadRequest(new { detail = ex.Message });
+            return Conflict(new { detail = ex.Message });
+        }
     }
 
     [HttpPatch("{id:guid}/status")]
@@ -117,6 +122,11 @@ public sealed class UsuariosController(IUsuarioService usuarioService) : Control
             return NoContent();
         }
         catch (KeyNotFoundException) { return NotFound(); }
-        catch (InvalidOperationException ex) { return Conflict(new { detail = ex.Message }); }
+        catch (InvalidOperationException ex)
+        {
+            if (ex.Message == "Senha atual incorreta.")
+                return BadRequest(new { detail = ex.Message });
+            return Conflict(new { detail = ex.Message });
+        }
     }
 }

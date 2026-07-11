@@ -66,6 +66,12 @@ builder.Services.AddAuthorization(opts =>
             nameof(RoleUsuario.Funcionario)));
     opts.AddPolicy("Autenticado",
         p => p.RequireAuthenticatedUser());
+    opts.AddPolicy("AcessoVendas",
+        p => p.RequireRole(nameof(RoleUsuario.Admin), nameof(RoleUsuario.Vendedor)));
+    opts.AddPolicy("AcessoEstoque",
+        p => p.RequireRole(nameof(RoleUsuario.Admin), nameof(RoleUsuario.Estoque)));
+    opts.AddPolicy("AcessoFinanceiro",
+        p => p.RequireRole(nameof(RoleUsuario.Admin), nameof(RoleUsuario.Financeiro)));
 });
 
 // ── 4. CORS ───────────────────────────────────────────────────────────────────

@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ibatech.Domain.Interfaces.Services;
-using Ibatech.Domain.DTOs; // ← mesmo namespace
+using Ibatech.Domain.DTOs;
+using Ibatech.Domain.Enums;
+using System.Security.Claims;
 
 namespace Ibatech.API.Controllers;
 
@@ -10,9 +12,31 @@ namespace Ibatech.API.Controllers;
 [Route("api/[controller]")]
 public sealed class UsuariosController(IUsuarioService usuarioService) : ControllerBase
 {
-    [HttpPost("cadastrar")]
-    [AllowAnonymous]
-    public async Task<ActionResult<UsuarioResponseDto>> Cadastrar(
+    [HttpGet]
+    [Authorize(Policy = "ApenasAdmin")]
+    public async Task<ActionResult<IEnumerable<UsuarioResumoDto>>> Listar(
+        [FromQuery] string? nome,
+        [FromQuery] string? email,
+        [FromQuery] RoleUsuario? role,
+        [FromQuery] bool? ativo,
+        CancellationToken ct)
+    {
+        var usuarios = await usuarioService.ListarAsync(nome, email, role, ativo, ct);
+        return Ok(usuarios);
+    }
+
+    [HttpGet("{id:guid}")]
+    [Authorize(Policy = "ApenasAdmin")]
+    public async Task<ActionResult<UsuarioResponseDto>> ObterPorId(
+        Guid id, CancellationToken ct)
+    {
+        var usuario = await usuarioService.ObterPorIdAsync(id, ct);
+        return usuario is null ? NotFound() : Ok(usuario);
+    }
+
+    [HttpPost]
+    [Authorize(Policy = "ApenasAdmin")]
+    public async Task<ActionResult<UsuarioResponseDto>> Criar(
         [FromBody] UsuarioCreateDto dto,
         CancellationToken ct)
     {
@@ -27,36 +51,72 @@ public sealed class UsuariosController(IUsuarioService usuarioService) : Control
         }
     }
 
-    [HttpGet]
-    [Authorize(Policy = "AdminOuFuncionario")]
-    public async Task<ActionResult<IEnumerable<UsuarioResponseDto>>> Listar(
-        CancellationToken ct)
-    {
-        var usuarios = await usuarioService.ListarAsync(ct);
-        return Ok(usuarios);
-    }
-
-    [HttpGet("{id:guid}")]
-    [Authorize(Policy = "Autenticado")]
-    public async Task<ActionResult<UsuarioResponseDto>> ObterPorId(
-        Guid id, CancellationToken ct)
-    {
-        var usuario = await usuarioService.ObterPorIdAsync(id, ct);
-        return usuario is null ? NotFound() : Ok(usuario);
-    }
-
-    [HttpDelete("{id:guid}")]
+    [HttpPut("{id:guid}")]
     [Authorize(Policy = "ApenasAdmin")]
-    public async Task<IActionResult> Desativar(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Atualizar(
+        Guid id,
+        [FromBody] AtualizarUsuarioDto dto,
+        CancellationToken ct)
     {
         try
         {
-            await usuarioService.DesativarAsync(id, ct);
+            await usuarioService.AtualizarAsync(id, dto, ct);
             return NoContent();
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return Conflict(new { detail = ex.Message }); }
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Policy = "ApenasAdmin")]
+    public async Task<IActionResult> AlterarStatus(
+        Guid id,
+        [FromBody] AlterarStatusUsuarioDto dto,
+        CancellationToken ct)
+    {
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == id.ToString())
+            return BadRequest(new { detail = "Não é possível desativar a própria conta." });
+
+        try
         {
-            return NotFound();
+            await usuarioService.AlterarStatusAsync(id, dto.Ativo, ct);
+            return NoContent();
         }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return Conflict(new { detail = ex.Message }); }
+    }
+
+    [HttpPut("{id:guid}/senha")]
+    [Authorize(Policy = "ApenasAdmin")]
+    public async Task<IActionResult> RedefinirSenha(
+        Guid id,
+        [FromBody] RedefinirSenhaUsuarioDto dto,
+        CancellationToken ct)
+    {
+        try
+        {
+            await usuarioService.RedefinirSenhaAsync(id, dto.NovaSenha, ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
+
+    [HttpPut("minha-senha")]
+    [Authorize]
+    public async Task<IActionResult> AlterarMinhaSenha(
+        [FromBody] AlterarMinhaSenhaDto dto,
+        CancellationToken ct)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        try
+        {
+            await usuarioService.AlterarMinhaSenhaAsync(Guid.Parse(userId), dto.SenhaAtual, dto.NovaSenha, ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return Conflict(new { detail = ex.Message }); }
     }
 }

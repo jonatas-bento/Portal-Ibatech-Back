@@ -16,4 +16,5 @@ public interface IRepositoryBase<TEntity> where TEntity : class
     Task<bool> ExisteAsync(
         Expression<Func<TEntity, bool>> predicado,
         CancellationToken ct = default);
+    IQueryable<TEntity> ObterQueryable();
 }

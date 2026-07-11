@@ -39,4 +39,6 @@ public abstract class RepositoryBase<TEntity>(IbatechDbContext context)
         Expression<Func<TEntity, bool>> predicado,
         CancellationToken ct = default) =>
         await DbSet.AnyAsync(predicado, ct);
+
+    public virtual IQueryable<TEntity> ObterQueryable() => DbSet.AsNoTracking();
 }

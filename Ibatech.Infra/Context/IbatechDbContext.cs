@@ -16,43 +16,63 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
-        // Aplica todas as IEntityTypeConfiguration<T> da assembly corrente
+        base.OnModelCreating(mb);
+
+        // Aplica as configurações existentes.
         mb.ApplyConfigurationsFromAssembly(typeof(IbatechDbContext).Assembly);
 
-        // Filtro global de soft-delete para todas as entidades que herdam EntityBase
-        // Filtro global de soft-delete para todas as entidades que herdam EntityBase
+        // Define explicitamente os nomes físicos das tabelas.
+        mb.Entity<Usuario>().ToTable("Usuarios");
+        mb.Entity<ProjetoRequisitos>().ToTable("ProjetosRequisitos");
+        mb.Entity<Produto>().ToTable("Produtos");
+        mb.Entity<Estoque>().ToTable("Estoques");
+        mb.Entity<MovimentacaoEstoque>().ToTable("Movimentacoes");
+        mb.Entity<TransacaoFinanceira>().ToTable("TransacoesFinanceiras");
+
+        // Filtro global de soft-delete.
         foreach (var entityType in mb.Model.GetEntityTypes())
         {
             var propertyAtivo = entityType.ClrType.GetProperty("Ativo");
-            if (propertyAtivo != null)
-            {
-                // 1. Instanciamos o parâmetro 'e' uma única vez aqui
-                var parametro = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
 
-                // 2. Montamos o corpo da expressão comparando a propriedade com true
-                var corpoPropriedade = System.Linq.Expressions.Expression.Property(parametro, "Ativo");
-                var constanteTrue = System.Linq.Expressions.Expression.Constant(true);
-                var comparacaoEqual = System.Linq.Expressions.Expression.Equal(corpoPropriedade, constanteTrue);
+            if (propertyAtivo is null)
+                continue;
 
-                // 3. Geramos o Lambda final passando a MESMA instância do parâmetro
-                var filtroLambda = System.Linq.Expressions.Expression.Lambda(comparacaoEqual, parametro);
+            var parametro = System.Linq.Expressions.Expression.Parameter(
+                entityType.ClrType,
+                "e");
 
-                mb.Entity(entityType.ClrType).HasQueryFilter(filtroLambda);
-            }
+            var corpoPropriedade =
+                System.Linq.Expressions.Expression.Property(parametro, "Ativo");
+
+            var constanteTrue =
+                System.Linq.Expressions.Expression.Constant(true);
+
+            var comparacaoEqual =
+                System.Linq.Expressions.Expression.Equal(
+                    corpoPropriedade,
+                    constanteTrue);
+
+            var filtroLambda =
+                System.Linq.Expressions.Expression.Lambda(
+                    comparacaoEqual,
+                    parametro);
+
+            mb.Entity(entityType.ClrType)
+                .HasQueryFilter(filtroLambda);
         }
-
-        base.OnModelCreating(mb);
     }
 
-    // Intercepta SaveChanges para auto-preencher AtualizadoEm
-    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    public override Task<int> SaveChangesAsync(
+        CancellationToken ct = default)
     {
-        foreach (var entry in ChangeTracker.Entries()
+        foreach (var entry in ChangeTracker
+                     .Entries()
                      .Where(e => e.State == EntityState.Modified))
         {
             if (entry.Entity is Ibatech.Domain.Entities.Base.EntityBase entity)
                 entity.MarcarAtualizado();
         }
+
         return base.SaveChangesAsync(ct);
     }
 }

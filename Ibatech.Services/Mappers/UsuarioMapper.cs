@@ -37,4 +37,19 @@ public static class UsuarioMapper
     public static IEnumerable<UsuarioResponseDto> ToDomainDtoList(
         this IEnumerable<Usuario> lista) =>
         lista.Select(u => u.ToDomainDto());
+
+    public static UsuarioResumoDto ToResumoDto(this Usuario u) => new(
+        u.Id,
+        u.NomeCompleto,
+        u.Email,
+        u.Telefone,
+        u.Cpf,
+        u.Role.ToString(),
+        u.Ativo,
+        u.CriadoEm
+    );
+
+    public static IEnumerable<UsuarioResumoDto> ToResumoDtoList(
+        this IEnumerable<Usuario> lista) =>
+        lista.Select(u => u.ToResumoDto());
 }

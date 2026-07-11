@@ -60,6 +60,28 @@ public class Usuario : EntityBase
         MarcarAtualizado();
     }
 
+    public void Atualizar(string nomeCompleto, string email, string? telefone, string? cpf, RoleUsuario role)
+    {
+        NomeCompleto = Guard(nomeCompleto, nameof(nomeCompleto));
+        Email = Guard(email, nameof(email));
+        Telefone = telefone;
+        Cpf = cpf;
+        Role = role;
+        MarcarAtualizado();
+    }
+
+    public void Ativar()
+    {
+        base.Ativo = true;
+        MarcarAtualizado();
+    }
+
+    public new void Desativar()
+    {
+        base.Ativo = false;
+        MarcarAtualizado();
+    }
+
     private static string Guard(string value, string campo)
     {
         if (string.IsNullOrWhiteSpace(value))

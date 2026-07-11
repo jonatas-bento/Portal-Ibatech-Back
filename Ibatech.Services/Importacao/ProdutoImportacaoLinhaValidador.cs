@@ -146,9 +146,22 @@ internal sealed class ProdutoImportacaoLinhaValidador
 
     private static string RemoverAcentos(string texto)
     {
-        var bytes = Encoding.GetEncoding("Cyrillic").GetBytes(texto);
-        return Encoding.ASCII.GetString(bytes);
+        // Normaliza o texto separando os caracteres base dos seus diacríticos (acentos)
+        // e remove apenas as marcas de acentuação (NonSpacingMark), preservando o texto original
+        // em todos os outros lugares (este método é usado apenas para comparação interna do "Tipo").
+        var normalizado = texto.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(capacity: normalizado.Length);
+
+        foreach (var c in normalizado)
+        {
+            var categoria = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (categoria != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+
+        return sb.ToString().Normalize(NormalizationForm.FormC);
     }
+
 
     private static ProdutoImportacaoErroDto CriarErro(int linha, string campo, object? valor, string msg) =>
         new() { Linha = linha, Campo = campo, Valor = valor?.ToString(), Mensagem = msg };

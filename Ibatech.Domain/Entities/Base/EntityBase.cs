@@ -8,6 +8,7 @@ public abstract class EntityBase
     public DateTime? AtualizadoEm { get; protected set; }
     public bool Ativo { get; protected set; } = true;
 
+    public void Ativar() => Ativo = true;
     public void Desativar() => Ativo = false;
     public void MarcarAtualizado() => AtualizadoEm = DateTime.UtcNow;
 }

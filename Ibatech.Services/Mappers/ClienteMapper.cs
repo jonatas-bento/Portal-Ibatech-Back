@@ -10,4 +10,7 @@ public static class ClienteMapper
 
     public static IEnumerable<ClienteResumoDto> ToResumoDtoList(this IEnumerable<Cliente> clientes) =>
         clientes.Select(c => c.ToResumoDto());
+
+    public static ClienteDetalheDto ToDetalheDto(this Cliente cliente) =>
+        new(cliente.Id, cliente.Nome, cliente.CpfCnpj, cliente.Telefone, cliente.Email, cliente.Endereco, cliente.Observacao, cliente.Ativo);
 }

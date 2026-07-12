@@ -14,7 +14,7 @@ public abstract class RepositoryBase<TEntity>(IbatechDbContext context)
 
     public virtual async Task<TEntity?> ObterPorIdAsync(
         Guid id, CancellationToken ct = default) =>
-        await DbSet.FindAsync([id], ct);
+        await DbSet.IgnoreQueryFilters().FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, ct);
 
     public virtual async Task<IEnumerable<TEntity>> ObterTodosAsync(
         CancellationToken ct = default) =>

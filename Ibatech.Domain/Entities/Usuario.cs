@@ -70,15 +70,15 @@ public class Usuario : EntityBase
         MarcarAtualizado();
     }
 
-    public void Ativar()
+    public new void Ativar()
     {
-        base.Ativo = true;
+        base.Ativar();
         MarcarAtualizado();
     }
 
     public new void Desativar()
     {
-        base.Ativo = false;
+        base.Desativar();
         MarcarAtualizado();
     }
 

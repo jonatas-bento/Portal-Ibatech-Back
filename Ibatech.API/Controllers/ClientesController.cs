@@ -15,7 +15,7 @@ public sealed class ClientesController(IClienteService service) : ControllerBase
         Ok(await service.ListarAsync(texto, ativo));
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ClienteResumoDto>> Obter(Guid id)
+    public async Task<ActionResult<ClienteDetalheDto>> Obter(Guid id)
     {
         var cliente = await service.ObterPorIdAsync(id);
         return cliente is null ? NotFound() : Ok(cliente);

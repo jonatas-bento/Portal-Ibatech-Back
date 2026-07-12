@@ -4,6 +4,7 @@ using Ibatech.Domain.Interfaces.Repositories;
 using Ibatech.Domain.Interfaces.Services;
 using Ibatech.Services.Mappers;
 using Ibatech.Repository.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ibatech.Services.Implementations;
 
@@ -13,28 +14,30 @@ public sealed class ClienteService(
 {
     public async Task<IEnumerable<ClienteResumoDto>> ListarAsync(string? texto, bool? ativo)
     {
-        var clientes = await repository.ObterTodosAsync();
+        var query = repository.ObterQueryable()
+            .IgnoreQueryFilters();
 
         if (ativo.HasValue)
-            clientes = clientes.Where(c => c.Ativo == ativo.Value);
+            query = query.Where(c => c.Ativo == ativo.Value);
 
         if (!string.IsNullOrWhiteSpace(texto))
         {
             texto = texto.Trim().ToLower();
-            clientes = clientes.Where(c =>
+            query = query.Where(c =>
                 c.Nome.ToLower().Contains(texto) ||
                 (c.CpfCnpj != null && c.CpfCnpj.Contains(texto)) ||
                 (c.Email != null && c.Email.ToLower().Contains(texto)) ||
                 (c.Telefone != null && c.Telefone.Contains(texto)));
         }
 
+        var clientes = await query.ToListAsync();
         return clientes.ToResumoDtoList();
     }
 
-    public async Task<ClienteResumoDto?> ObterPorIdAsync(Guid id)
+    public async Task<ClienteDetalheDto?> ObterPorIdAsync(Guid id)
     {
         var cliente = await repository.ObterPorIdAsync(id);
-        return cliente?.ToResumoDto();
+        return cliente?.ToDetalheDto();
     }
 
     public async Task<ClienteResumoDto> CriarAsync(CriarClienteDto dto)
@@ -65,10 +68,13 @@ public sealed class ClienteService(
 
     public async Task<bool> AlterarStatusAsync(Guid id, bool ativo)
     {
-        var cliente = await repository.ObterPorIdAsync(id);
+        var cliente = await repository.ObterQueryable()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.Id == id);
+
         if (cliente is null) return false;
 
-        if (ativo) { /* Cliente já é ativo por padrão, se necessário adicionar método Ativar na entidade */ }
+        if (ativo) cliente.Ativar();
         else cliente.Desativar();
 
         repository.Atualizar(cliente);

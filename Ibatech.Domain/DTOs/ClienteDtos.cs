@@ -24,3 +24,13 @@ public record ClienteResumoDto(
     string? CpfCnpj,
     string? Email,
     bool Ativo);
+
+public record ClienteDetalheDto(
+    Guid Id,
+    string Nome,
+    string? CpfCnpj,
+    string? Telefone,
+    string? Email,
+    string? Endereco,
+    string? Observacao,
+    bool Ativo);

@@ -13,6 +13,7 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
     public DbSet<Estoque> Estoques => Set<Estoque>();
     public DbSet<MovimentacaoEstoque> Movimentacoes => Set<MovimentacaoEstoque>();
     public DbSet<TransacaoFinanceira> TransacoesFinanceiras => Set<TransacaoFinanceira>();
+    public DbSet<Cliente> Clientes => Set<Cliente>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -28,6 +29,7 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
         mb.Entity<Estoque>().ToTable("Estoques");
         mb.Entity<MovimentacaoEstoque>().ToTable("Movimentacoes");
         mb.Entity<TransacaoFinanceira>().ToTable("TransacoesFinanceiras");
+        mb.Entity<Cliente>().ToTable("Clientes");
 
         // Filtro global de soft-delete.
         foreach (var entityType in mb.Model.GetEntityTypes())

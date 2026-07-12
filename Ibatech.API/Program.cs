@@ -8,6 +8,7 @@ using Ibatech.Services.Implementations;
 using Ibatech.Domain.Interfaces.Services;
 using Ibatech.Domain.Interfaces.Repositories;
 using Ibatech.Repository.Implementations;
+using Ibatech.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -93,6 +94,7 @@ builder.Services.AddScoped<IProjetoRepository, ProjetoRepository>();
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 builder.Services.AddScoped<IEstoqueRepository, EstoqueRepository>();
 builder.Services.AddScoped<IFinanceiroRepository, FinanceiroRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 
 // ── 6. Injeção de Dependência — Serviços ─────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -101,6 +103,7 @@ builder.Services.AddScoped<IProjetoService, ProjetoService>();
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
 builder.Services.AddScoped<IProdutoImportacaoService, ProdutoImportacaoService>();
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 // ── 7. Controllers + JSON ─────────────────────────────────────────────────────
 builder.Services

@@ -7,12 +7,12 @@ public sealed class Venda : EntityBase
 {
     private readonly List<VendaItem> _itens = [];
 
-    public string Numero { get; private set; }
+    public string Numero { get; private set; } = null!;
     public Guid? ClienteId { get; private set; }
     public string? ClienteNomeSnapshot { get; private set; }
     public string? ClienteCpfCnpjSnapshot { get; private set; }
     public Guid VendedorId { get; private set; }
-    public string VendedorNomeSnapshot { get; private set; }
+    public string VendedorNomeSnapshot { get; private set; } = null!;
     public StatusVenda Status { get; private set; }
     public DateTime DataVenda { get; private set; }
     public decimal ValorBruto { get; private set; }

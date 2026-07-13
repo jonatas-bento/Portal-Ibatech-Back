@@ -7,7 +7,7 @@ public sealed class VendaItem : EntityBase
     public Guid VendaId { get; private set; }
     public Guid ProdutoId { get; private set; }
     public string? CodigoSku { get; private set; }
-    public string NomeProduto { get; private set; }
+    public string NomeProduto { get; private set; } = null!;
     public string? DescricaoProduto { get; private set; }
     public int Quantidade { get; private set; }
     public decimal PrecoUnitario { get; private set; }

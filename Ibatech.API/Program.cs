@@ -4,7 +4,6 @@ using Ibatech.API.Middlewares;
 using Ibatech.Domain.Enums;
 using Ibatech.Infra.Context;
 using Ibatech.Repository.UnitOfWork;
-using Ibatech.Services.Implementations;
 using Ibatech.Domain.Interfaces.Services;
 using Ibatech.Domain.Interfaces.Repositories;
 using Ibatech.Repository.Implementations;

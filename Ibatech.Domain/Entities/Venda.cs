@@ -24,15 +24,26 @@ public sealed class Venda : EntityBase
 
     private Venda() { }
 
-    public Venda(string numero, Guid vendedorId, string vendedorNomeSnapshot)
+    public Venda(
+        string numero,
+        Guid? clienteId,
+        string? clienteNomeSnapshot,
+        string? clienteCpfCnpjSnapshot,
+        Guid vendedorId,
+        string vendedorNomeSnapshot,
+        string? observacao)
     {
         if (string.IsNullOrWhiteSpace(numero)) throw new ArgumentException("Número é obrigatório.");
         if (vendedorId == Guid.Empty) throw new ArgumentException("VendedorId inválido.");
         if (string.IsNullOrWhiteSpace(vendedorNomeSnapshot)) throw new ArgumentException("VendedorNomeSnapshot é obrigatório.");
 
         Numero = numero;
+        ClienteId = clienteId;
+        ClienteNomeSnapshot = clienteNomeSnapshot;
+        ClienteCpfCnpjSnapshot = clienteCpfCnpjSnapshot;
         VendedorId = vendedorId;
         VendedorNomeSnapshot = vendedorNomeSnapshot;
+        Observacao = observacao?.Trim();
         Status = StatusVenda.Rascunho;
         DataVenda = DateTime.UtcNow;
         ValorBruto = 0;

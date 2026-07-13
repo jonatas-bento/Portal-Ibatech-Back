@@ -75,7 +75,7 @@ public sealed class Venda : EntityBase
         if (Status != StatusVenda.Rascunho) throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
         
         var item = _itens.FirstOrDefault(i => i.Id == itemId);
-        if (item == null) throw new InvalidOperationException("Item não encontrado.");
+        if (item == null) throw new KeyNotFoundException("Item não encontrado.");
 
         item.Atualizar(quantidade, desconto);
         RecalcularTotais();
@@ -87,7 +87,7 @@ public sealed class Venda : EntityBase
         if (Status != StatusVenda.Rascunho) throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
 
         var item = _itens.FirstOrDefault(i => i.Id == itemId);
-        if (item == null) throw new InvalidOperationException("Item não encontrado.");
+        if (item == null) throw new KeyNotFoundException("Item não encontrado.");
 
         _itens.Remove(item);
         RecalcularTotais();

@@ -118,7 +118,7 @@ public sealed class VendaService(
         CancellationToken cancellationToken = default)
     {
         if (vendaId == Guid.Empty) throw new ArgumentException("ID da venda inválido.");
-        if (dto.ProdutoId == Guid.Empty) throw new ArgumentException("ID da venda inválido.");
+        if (dto.ProdutoId == Guid.Empty) throw new ArgumentException("ID do produto inválido.");
 
         var venda = await vendaRepository.ObterComItensAsync(vendaId, cancellationToken);
         if (venda is null) throw new KeyNotFoundException("Venda não encontrada.");

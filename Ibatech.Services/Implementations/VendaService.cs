@@ -127,7 +127,7 @@ public sealed class VendaService(
         if (produto is null || !produto.Ativo)
             throw new InvalidOperationException("Produto não encontrado ou inativo.");
 
-        venda.AdicionarItem(
+        var item = venda.AdicionarItem(
             produto.Id,
             produto.CodigoSku,
             produto.Nome,
@@ -135,6 +135,8 @@ public sealed class VendaService(
             dto.Quantidade,
             produto.PrecoVenda,
             dto.Desconto);
+
+        vendaRepository.AdicionarItem(item);
 
         await uow.CommitAsync(cancellationToken);
         return VendaMapper.ToDetalheDto(venda);

@@ -51,7 +51,7 @@ public sealed class Venda : EntityBase
         ValorTotal = 0;
     }
 
-    public void AdicionarItem(
+    public VendaItem AdicionarItem(
         Guid produtoId,
         string? codigoSku,
         string nomeProduto,
@@ -67,6 +67,7 @@ public sealed class Venda : EntityBase
         _itens.Add(item);
         RecalcularTotais();
         MarcarAtualizado();
+        return item;
     }
 
     public void AtualizarItem(Guid itemId, int quantidade, decimal desconto)

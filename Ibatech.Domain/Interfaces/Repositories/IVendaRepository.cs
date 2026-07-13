@@ -20,4 +20,6 @@ public interface IVendaRepository : IRepositoryBase<Venda>
     Task<bool> ExisteNumeroAsync(
         string numero,
         CancellationToken cancellationToken = default);
+
+    void AdicionarItem(VendaItem item);
 }

@@ -80,4 +80,9 @@ public class VendaRepository(IbatechDbContext context)
             .AsNoTracking()
             .AnyAsync(v => v.Numero == numero.Trim(), cancellationToken);
     }
+
+    public void AdicionarItem(VendaItem item)
+    {
+        context.Set<VendaItem>().Add(item);
+    }
 }

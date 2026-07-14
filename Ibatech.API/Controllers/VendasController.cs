@@ -42,6 +42,10 @@ public sealed class VendasController(IVendaService service) : ControllerBase
     public async Task<ActionResult<VendaDetalheDto>> RemoverItem(Guid id, Guid itemId, CancellationToken ct) =>
         Ok(await service.RemoverItemAsync(id, itemId, ct));
 
+    [HttpPost("{id:guid}/finalizar")]
+    public async Task<ActionResult<VendaDetalheDto>> Finalizar(Guid id, FinalizarVendaDto dto, CancellationToken ct) =>
+        Ok(await service.FinalizarAsync(id, dto, ObterUsuarioId(), ct));
+
     private Guid ObterUsuarioId()
     {
         var valor = User.FindFirstValue(ClaimTypes.NameIdentifier);

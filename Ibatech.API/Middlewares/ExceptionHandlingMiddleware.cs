@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Ibatech.Domain.Exceptions;
 
 namespace Ibatech.API.Middlewares;
 
@@ -25,6 +26,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Recurso não encontrado."),
             ArgumentException => (StatusCodes.Status400BadRequest, "Erro de validação."),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Não autorizado."),
+            ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Acesso proibido."),
             InvalidOperationException => (StatusCodes.Status409Conflict, "Conflito de regra de negócio."),
             _ => (StatusCodes.Status500InternalServerError, "Erro interno do servidor.")
         };

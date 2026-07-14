@@ -55,9 +55,19 @@ public class VendaConfiguration : IEntityTypeConfiguration<Venda>
         builder.Property(v => v.ValorRecebido).HasPrecision(18, 2);
         builder.Property(v => v.Troco).HasPrecision(18, 2);
 
-        builder.HasOne(v => v.TransacaoFinanceira)
+        builder.Property(v => v.DataCancelamento);
+        builder.Property(v => v.CanceladaPorUsuarioId);
+        builder.HasIndex(v => v.CanceladaPorUsuarioId);
+        builder.Property(v => v.MotivoCancelamento).HasMaxLength(500);
+
+        builder.Property(v => v.DataEstorno);
+        builder.Property(v => v.EstornadaPorUsuarioId);
+        builder.HasIndex(v => v.EstornadaPorUsuarioId);
+        builder.Property(v => v.MotivoEstorno).HasMaxLength(500);
+
+        builder.HasMany(v => v.TransacoesFinanceiras)
             .WithOne(t => t.Venda)
-            .HasForeignKey<TransacaoFinanceira>(t => t.VendaId)
+            .HasForeignKey(t => t.VendaId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(v => v.MovimentacoesEstoque)
@@ -75,10 +85,23 @@ public class VendaConfiguration : IEntityTypeConfiguration<Venda>
             .HasForeignKey(v => v.VendedorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(v => v.CanceladaPorUsuarioId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(v => v.EstornadaPorUsuarioId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Metadata.FindNavigation(nameof(Venda.Itens))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Metadata.FindNavigation(nameof(Venda.MovimentacoesEstoque))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Metadata.FindNavigation(nameof(Venda.TransacoesFinanceiras))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }

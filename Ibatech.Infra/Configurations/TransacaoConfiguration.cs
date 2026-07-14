@@ -19,6 +19,7 @@ public sealed class TransacaoConfiguration : IEntityTypeConfiguration<TransacaoF
         b.Property(t => t.DataPagamento);
         b.Property(t => t.Liquidada).HasDefaultValue(false);
         b.Property(t => t.Categoria).HasMaxLength(100);
+        b.HasIndex(t => t.VendaId);
         b.Property(t => t.Ativo).HasDefaultValue(true);
         b.Property(t => t.CriadoEm).IsRequired();
         b.Property(t => t.AtualizadoEm);

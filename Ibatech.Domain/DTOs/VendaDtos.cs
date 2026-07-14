@@ -36,7 +36,14 @@ public record VendaDetalheDto(
     FormaPagamento? FormaPagamento,
     decimal? ValorRecebido,
     decimal? Troco,
+    DateTime? DataCancelamento,
+    Guid? CanceladaPorUsuarioId,
+    string? MotivoCancelamento,
+    DateTime? DataEstorno,
+    Guid? EstornadaPorUsuarioId,
+    string? MotivoEstorno,
     IReadOnlyCollection<VendaItemDto> Itens);
+
 
 public record VendaItemDto(
     Guid Id,
@@ -66,6 +73,11 @@ public record AdicionarVendaItemDto(
 public record AtualizarVendaItemDto(
     int Quantidade,
     decimal Desconto);
+
+public record CancelarVendaDto(string Motivo);
+
+public record EstornarVendaDto(string Motivo);
+
 
 public record VendaFiltroDto(
     string? Numero,

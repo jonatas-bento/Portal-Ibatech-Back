@@ -50,7 +50,14 @@ public static class VendaMapper
             venda.FormaPagamento,
             venda.ValorRecebido,
             venda.Troco,
+            venda.DataCancelamento,
+            venda.CanceladaPorUsuarioId,
+            venda.MotivoCancelamento,
+            venda.DataEstorno,
+            venda.EstornadaPorUsuarioId,
+            venda.MotivoEstorno,
             itens);
+
     }
 
     public static VendaItemDto ToItemDto(VendaItem item)

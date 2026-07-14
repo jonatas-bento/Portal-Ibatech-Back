@@ -49,4 +49,29 @@ public interface IVendaService
         FinalizarVendaDto dto,
         Guid usuarioId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancela uma venda em rascunho. Não movimenta estoque nem cria
+    /// transação financeira. Admin pode cancelar qualquer rascunho;
+    /// Vendedor só pode cancelar rascunhos dos quais é o próprio VendedorId.
+    /// </summary>
+    Task<VendaDetalheDto> CancelarAsync(
+        Guid vendaId,
+        CancelarVendaDto dto,
+        Guid usuarioId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Estorna uma venda concluída de maneira atômica: somente Admin,
+    /// devolve estoque (nova movimentação de Entrada por item, preservando
+    /// as Saídas originais), cria uma transação financeira compensatória de
+    /// Despesa com o ValorTotal da venda (preservando a Receita original) e
+    /// marca a venda como Estornada, persistindo tudo em um único
+    /// CommitAsync.
+    /// </summary>
+    Task<VendaDetalheDto> EstornarAsync(
+        Guid vendaId,
+        EstornarVendaDto dto,
+        Guid usuarioId,
+        CancellationToken cancellationToken = default);
 }

@@ -33,7 +33,8 @@ public class VendaConfiguration : IEntityTypeConfiguration<Venda>
         builder.Property(v => v.Status)
             .IsRequired()
             .HasConversion<string>()
-            .HasMaxLength(30);
+            .HasMaxLength(30)
+            .IsConcurrencyToken();
         builder.HasIndex(v => v.Status);
 
         builder.Property(v => v.DataVenda).IsRequired();
@@ -44,6 +45,25 @@ public class VendaConfiguration : IEntityTypeConfiguration<Venda>
         builder.Property(v => v.ValorTotal).HasPrecision(18, 2);
 
         builder.Property(v => v.Observacao).HasMaxLength(1000);
+
+        builder.Property(v => v.DataFinalizacao);
+
+        builder.Property(v => v.FormaPagamento)
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
+        builder.Property(v => v.ValorRecebido).HasPrecision(18, 2);
+        builder.Property(v => v.Troco).HasPrecision(18, 2);
+
+        builder.HasOne(v => v.TransacaoFinanceira)
+            .WithOne(t => t.Venda)
+            .HasForeignKey<TransacaoFinanceira>(t => t.VendaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(v => v.MovimentacoesEstoque)
+            .WithOne(m => m.Venda)
+            .HasForeignKey(m => m.VendaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Cliente>()
             .WithMany()
@@ -56,6 +76,9 @@ public class VendaConfiguration : IEntityTypeConfiguration<Venda>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Metadata.FindNavigation(nameof(Venda.Itens))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Metadata.FindNavigation(nameof(Venda.MovimentacoesEstoque))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }

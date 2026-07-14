@@ -32,6 +32,10 @@ public record VendaDetalheDto(
     string? Observacao,
     DateTime CriadoEm,
     DateTime? AtualizadoEm,
+    DateTime? DataFinalizacao,
+    FormaPagamento? FormaPagamento,
+    decimal? ValorRecebido,
+    decimal? Troco,
     IReadOnlyCollection<VendaItemDto> Itens);
 
 public record VendaItemDto(

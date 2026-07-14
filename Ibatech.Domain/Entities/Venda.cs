@@ -1,5 +1,6 @@
 using Ibatech.Domain.Entities.Base;
 using Ibatech.Domain.Enums;
+using FormaPagamentoEnum = Ibatech.Domain.Enums.FormaPagamento;
 
 namespace Ibatech.Domain.Entities;
 
@@ -19,8 +20,16 @@ public sealed class Venda : EntityBase
     public decimal Desconto { get; private set; }
     public decimal ValorTotal { get; private set; }
     public string? Observacao { get; private set; }
+    public DateTime? DataFinalizacao { get; private set; }
+    public FormaPagamento? FormaPagamento { get; private set; }
+    public decimal? ValorRecebido { get; private set; }
+    public decimal? Troco { get; private set; }
 
+    public TransacaoFinanceira? TransacaoFinanceira { get; private set; }
     public IReadOnlyCollection<VendaItem> Itens => _itens.AsReadOnly();
+    public IReadOnlyCollection<MovimentacaoEstoque> MovimentacoesEstoque => _movimentacoesEstoque.AsReadOnly();
+
+    private readonly List<MovimentacaoEstoque> _movimentacoesEstoque = [];
 
     private Venda() { }
 
@@ -60,7 +69,7 @@ public sealed class Venda : EntityBase
         decimal precoUnitario,
         decimal desconto)
     {
-        if (Status != StatusVenda.Rascunho) throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
+        GarantirRascunho();
         if (_itens.Any(i => i.ProdutoId == produtoId)) throw new InvalidOperationException("Produto já adicionado.");
 
         var item = new VendaItem(Id, produtoId, codigoSku, nomeProduto, descricaoProduto, quantidade, precoUnitario, desconto);
@@ -72,7 +81,7 @@ public sealed class Venda : EntityBase
 
     public void AtualizarItem(Guid itemId, int quantidade, decimal desconto)
     {
-        if (Status != StatusVenda.Rascunho) throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
+        GarantirRascunho();
         
         var item = _itens.FirstOrDefault(i => i.Id == itemId);
         if (item == null) throw new KeyNotFoundException("Item não encontrado.");
@@ -84,7 +93,7 @@ public sealed class Venda : EntityBase
 
     public void RemoverItem(Guid itemId)
     {
-        if (Status != StatusVenda.Rascunho) throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
+        GarantirRascunho();
 
         var item = _itens.FirstOrDefault(i => i.Id == itemId);
         if (item == null) throw new KeyNotFoundException("Item não encontrado.");
@@ -100,7 +109,7 @@ public sealed class Venda : EntityBase
         string? clienteCpfCnpjSnapshot,
         string? observacao)
     {
-        if (Status != StatusVenda.Rascunho) throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
+        GarantirRascunho();
 
         ClienteId = clienteId;
         ClienteNomeSnapshot = clienteNomeSnapshot;
@@ -114,5 +123,87 @@ public sealed class Venda : EntityBase
         ValorBruto = _itens.Sum(i => i.Quantidade * i.PrecoUnitario);
         Desconto = _itens.Sum(i => i.Desconto);
         ValorTotal = _itens.Sum(i => i.ValorTotal);
+    }
+
+    public void Concluir(
+        FormaPagamentoEnum formaPagamento,
+        decimal? valorRecebido,
+        DateTime dataFinalizacaoUtc)
+    {
+        if (Status != StatusVenda.Rascunho)
+            throw new InvalidOperationException("Apenas vendas em rascunho podem ser concluídas.");
+
+        if (_itens.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "A venda precisa possuir pelo menos um item.");
+        }
+
+        if (ValorTotal <= 0)
+        {
+            throw new InvalidOperationException(
+                "O valor total da venda deve ser maior que zero.");
+        }
+
+        if (dataFinalizacaoUtc == default)
+        {
+            throw new ArgumentException(
+                "Data de finalização inválida.",
+                nameof(dataFinalizacaoUtc));
+        }
+
+        if (!Enum.IsDefined(typeof(FormaPagamentoEnum), formaPagamento))
+        {
+            throw new ArgumentException(
+                "Forma de pagamento inválida.",
+                nameof(formaPagamento));
+        }
+
+        decimal valorEfetivamenteRecebido;
+        decimal troco;
+
+        if (formaPagamento == FormaPagamentoEnum.Dinheiro)
+        {
+            if (!valorRecebido.HasValue)
+            {
+                throw new ArgumentException(
+                    "O valor recebido é obrigatório para pagamento em dinheiro.",
+                    nameof(valorRecebido));
+            }
+
+            if (valorRecebido.Value < ValorTotal)
+            {
+                throw new InvalidOperationException(
+                    "O valor recebido é insuficiente.");
+            }
+
+            valorEfetivamenteRecebido = valorRecebido.Value;
+            troco = valorRecebido.Value - ValorTotal;
+        }
+        else
+        {
+            if (valorRecebido.HasValue)
+            {
+                throw new ArgumentException(
+                    "Valor recebido deve ser informado apenas para pagamento em dinheiro.",
+                    nameof(valorRecebido));
+            }
+
+            valorEfetivamenteRecebido = ValorTotal;
+            troco = 0;
+        }
+
+        Status = StatusVenda.Concluida;
+        FormaPagamento = formaPagamento;
+        ValorRecebido = valorEfetivamenteRecebido;
+        Troco = troco;
+        DataFinalizacao = dataFinalizacaoUtc;
+        AtualizadoEm = dataFinalizacaoUtc;
+    }
+
+    private void GarantirRascunho()
+    {
+        if (Status != StatusVenda.Rascunho)
+            throw new InvalidOperationException("Apenas vendas em rascunho podem ser alteradas.");
     }
 }

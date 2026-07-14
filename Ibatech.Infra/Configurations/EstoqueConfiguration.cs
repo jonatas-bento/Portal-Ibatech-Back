@@ -9,7 +9,7 @@ public sealed class EstoqueConfiguration : IEntityTypeConfiguration<Estoque>
     {
         b.ToTable("estoques");
         b.HasKey(e => e.Id);
-        b.Property(e => e.QuantidadeAtual).IsRequired();
+        b.Property(e => e.QuantidadeAtual).IsRequired().IsConcurrencyToken();
         b.Property(e => e.QuantidadeMinima).IsRequired().HasDefaultValue(5);
         // Coluna computada para alerta (lida no domínio, não persiste)
         b.Ignore(e => e.EstaBaixoDoMinimo);

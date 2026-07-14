@@ -46,6 +46,10 @@ public static class VendaMapper
             venda.Observacao,
             venda.CriadoEm,
             venda.AtualizadoEm,
+            venda.DataFinalizacao,
+            venda.FormaPagamento,
+            venda.ValorRecebido,
+            venda.Troco,
             itens);
     }
 

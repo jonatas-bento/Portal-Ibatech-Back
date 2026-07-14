@@ -125,7 +125,46 @@ public sealed class Venda : EntityBase
         ValorTotal = _itens.Sum(i => i.ValorTotal);
     }
 
+    /// <summary>
+    /// Valida se a venda pode ser concluída com os dados de pagamento informados,
+    /// sem alterar nenhum estado da entidade. Deve ser chamado antes de qualquer
+    /// efeito colateral externo (ex.: baixa de estoque) para permitir falha
+    /// antecipada sem necessidade de desfazer alterações em memória.
+    /// </summary>
+    public void ValidarConclusao(
+        FormaPagamentoEnum formaPagamento,
+        decimal? valorRecebido,
+        DateTime dataFinalizacaoUtc)
+    {
+        ValidarECalcularConclusao(formaPagamento, valorRecebido, dataFinalizacaoUtc);
+    }
+
     public void Concluir(
+        FormaPagamentoEnum formaPagamento,
+        decimal? valorRecebido,
+        DateTime dataFinalizacaoUtc)
+    {
+        var (valorEfetivamenteRecebido, troco) = ValidarECalcularConclusao(
+            formaPagamento,
+            valorRecebido,
+            dataFinalizacaoUtc);
+
+        Status = StatusVenda.Concluida;
+        FormaPagamento = formaPagamento;
+        ValorRecebido = valorEfetivamenteRecebido;
+        Troco = troco;
+        DataFinalizacao = dataFinalizacaoUtc;
+        AtualizadoEm = dataFinalizacaoUtc;
+    }
+
+    /// <summary>
+    /// Regra única de validação e cálculo dos valores de pagamento da conclusão
+    /// da venda. Não produz efeitos colaterais: apenas valida e retorna os
+    /// valores calculados de ValorRecebido/Troco. Compartilhada por
+    /// <see cref="ValidarConclusao"/> e <see cref="Concluir"/> para evitar
+    /// duplicação de regras.
+    /// </summary>
+    private (decimal ValorRecebido, decimal Troco) ValidarECalcularConclusao(
         FormaPagamentoEnum formaPagamento,
         decimal? valorRecebido,
         DateTime dataFinalizacaoUtc)
@@ -159,9 +198,6 @@ public sealed class Venda : EntityBase
                 nameof(formaPagamento));
         }
 
-        decimal valorEfetivamenteRecebido;
-        decimal troco;
-
         if (formaPagamento == FormaPagamentoEnum.Dinheiro)
         {
             if (!valorRecebido.HasValue)
@@ -177,28 +213,17 @@ public sealed class Venda : EntityBase
                     "O valor recebido é insuficiente.");
             }
 
-            valorEfetivamenteRecebido = valorRecebido.Value;
-            troco = valorRecebido.Value - ValorTotal;
+            return (valorRecebido.Value, valorRecebido.Value - ValorTotal);
         }
-        else
+
+        if (valorRecebido.HasValue)
         {
-            if (valorRecebido.HasValue)
-            {
-                throw new ArgumentException(
-                    "Valor recebido deve ser informado apenas para pagamento em dinheiro.",
-                    nameof(valorRecebido));
-            }
-
-            valorEfetivamenteRecebido = ValorTotal;
-            troco = 0;
+            throw new ArgumentException(
+                "Valor recebido deve ser informado apenas para pagamento em dinheiro.",
+                nameof(valorRecebido));
         }
 
-        Status = StatusVenda.Concluida;
-        FormaPagamento = formaPagamento;
-        ValorRecebido = valorEfetivamenteRecebido;
-        Troco = troco;
-        DataFinalizacao = dataFinalizacaoUtc;
-        AtualizadoEm = dataFinalizacaoUtc;
+        return (ValorTotal, 0);
     }
 
     private void GarantirRascunho()

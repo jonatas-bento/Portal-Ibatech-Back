@@ -18,4 +18,21 @@ public sealed class EstoqueRepository(IbatechDbContext ctx)
     public async Task AddRangeAsync(
         IEnumerable<Estoque> estoques, CancellationToken ct = default) =>
         await DbSet.AddRangeAsync(estoques, ct);
+
+    public async Task<IReadOnlyCollection<Estoque>> ObterPorProdutosAsync(
+        IReadOnlyCollection<Guid> produtoIds,
+        CancellationToken ct = default)
+    {
+        if (produtoIds.Count == 0)
+            return Array.Empty<Estoque>();
+
+        return await DbSet
+            .Where(e => produtoIds.Contains(e.ProdutoId))
+            .ToListAsync(ct);
+    }
+
+    public async Task AdicionarMovimentacoesAsync(
+        IEnumerable<MovimentacaoEstoque> movimentacoes,
+        CancellationToken ct = default) =>
+        await ctx.Set<MovimentacaoEstoque>().AddRangeAsync(movimentacoes, ct);
 }

@@ -5,6 +5,7 @@ using Ibatech.Domain.Interfaces.Repositories;
 using Ibatech.Domain.Interfaces.Services;
 using Ibatech.Repository.UnitOfWork;
 using Ibatech.Services.Mappers;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ibatech.Services.Implementations;
 
@@ -13,8 +14,12 @@ public sealed class VendaService(
     IClienteRepository clienteRepository,
     IProdutoRepository produtoRepository,
     IUsuarioRepository usuarioRepository,
+    IEstoqueRepository estoqueRepository,
+    IFinanceiroRepository financeiroRepository,
     IUnitOfWork uow) : IVendaService
 {
+    private const string NomeIndiceUnicoTransacaoVenda = "IX_TransacoesFinanceiras_VendaId";
+
     public async Task<IReadOnlyCollection<VendaResumoDto>> ListarAsync(
         VendaFiltroDto filtros,
         CancellationToken cancellationToken = default)
@@ -175,6 +180,158 @@ public sealed class VendaService(
 
         await uow.CommitAsync(cancellationToken);
         return VendaMapper.ToDetalheDto(venda);
+    }
+
+    public async Task<VendaDetalheDto> FinalizarAsync(
+        Guid vendaId,
+        FinalizarVendaDto dto,
+        Guid usuarioId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+        if (vendaId == Guid.Empty) throw new ArgumentException("ID da venda inválido.");
+        if (usuarioId == Guid.Empty) throw new ArgumentException("Usuário inválido.");
+
+        var usuario = await usuarioRepository.ObterPorIdAsync(usuarioId);
+
+        if (usuario is null || !usuario.Ativo)
+        {
+            throw new InvalidOperationException(
+                "Usuário responsável não encontrado ou inativo.");
+        }
+
+        if (usuario.Role != RoleUsuario.Admin &&
+            usuario.Role != RoleUsuario.Vendedor)
+        {
+            throw new InvalidOperationException(
+                "Usuário sem permissão para finalizar vendas.");
+        }
+
+        // 1. Carregar a venda rastreada, com itens, em uma única instância.
+        var venda = await vendaRepository.ObterComItensAsync(vendaId, cancellationToken);
+        if (venda is null) throw new KeyNotFoundException("Venda não encontrada.");
+
+        // Data única da operação, usada em todos os registros criados.
+        var dataOperacaoUtc = DateTime.UtcNow;
+
+        // 2. Validar a conclusão da venda (status, itens, total, pagamento)
+        //    ANTES de tocar em qualquer estoque.
+        venda.ValidarConclusao(dto.FormaPagamento, dto.ValorRecebido, dataOperacaoUtc);
+
+        // 3. Carregar todos os estoques necessários em uma única consulta.
+        var produtoIds = venda.Itens
+            .Select(i => i.ProdutoId)
+            .Distinct()
+            .ToArray();
+
+        var estoques = await estoqueRepository.ObterPorProdutosAsync(produtoIds, cancellationToken);
+        var estoquesPorProduto = estoques.ToDictionary(e => e.ProdutoId);
+
+        // 4. Validar todos os estoques antes de alterar qualquer um deles.
+        foreach (var item in venda.Itens)
+        {
+            if (!estoquesPorProduto.TryGetValue(item.ProdutoId, out var estoque))
+            {
+                throw new InvalidOperationException(
+                    $"Estoque não encontrado para o produto '{item.NomeProduto}'.");
+            }
+
+            if (item.Quantidade > estoque.QuantidadeAtual)
+            {
+                throw new InvalidOperationException(
+                    $"Estoque insuficiente para o produto '{item.NomeProduto}'. " +
+                    $"Disponível: {estoque.QuantidadeAtual}. Solicitado: {item.Quantidade}.");
+            }
+        }
+
+        // 5. Executar a baixa de estoque e criar as movimentações.
+        var movimentacoes = new List<MovimentacaoEstoque>(venda.Itens.Count);
+
+        foreach (var item in venda.Itens)
+        {
+            var estoque = estoquesPorProduto[item.ProdutoId];
+            estoque.Saida(item.Quantidade);
+
+            var movimentacao = new MovimentacaoEstoque(
+                item.ProdutoId,
+                TipoMovimentacao.Saida,
+                item.Quantidade,
+                usuario.Id,
+                $"Venda {venda.Numero} concluída",
+                venda.Id);
+
+            movimentacoes.Add(movimentacao);
+        }
+
+        await estoqueRepository.AdicionarMovimentacoesAsync(movimentacoes, cancellationToken);
+
+        // 6. Criar a transação financeira de entrada com o valor total da
+        //    venda (nunca o valor recebido) e liquidá-la imediatamente.
+        var transacao = new TransacaoFinanceira(
+            $"Venda {venda.Numero}",
+            venda.ValorTotal,
+            TipoTransacao.Receita,
+            dataOperacaoUtc,
+            "Venda",
+            usuario.Id,
+            venda.Id);
+
+        transacao.Liquidar(dataOperacaoUtc);
+
+        await financeiroRepository.AdicionarAsync(transacao, cancellationToken);
+
+        // 7. Concluir a venda (revalida e define os campos de finalização).
+        venda.Concluir(dto.FormaPagamento, dto.ValorRecebido, dataOperacaoUtc);
+
+        // 8. Único CommitAsync, com tratamento de concorrência.
+        try
+        {
+            await uow.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new InvalidOperationException(
+                "A venda ou o estoque foi alterado por outra operação. Atualize os dados e tente novamente.",
+                ex);
+        }
+        catch (DbUpdateException ex) when (EhDuplicidadeTransacaoDaVenda(ex))
+        {
+            throw new InvalidOperationException(
+                "A venda já possui uma transação financeira.",
+                ex);
+        }
+
+        return VendaMapper.ToDetalheDto(venda);
+    }
+
+    /// <summary>
+    /// Verifica, percorrendo a cadeia de InnerException, se o DbUpdateException
+    /// corresponde a uma violação do índice único de TransacaoFinanceira.VendaId.
+    /// Exige tanto um indicador de duplicidade quanto o nome exato do índice,
+    /// evitando classificar erros de banco genéricos como conflito.
+    /// </summary>
+    private static bool EhDuplicidadeTransacaoDaVenda(DbUpdateException exception)
+    {
+        Exception? atual = exception;
+
+        while (atual is not null)
+        {
+            var mensagem = atual.Message;
+
+            var contemIndicadorDuplicidade =
+                mensagem.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase) ||
+                mensagem.Contains("1062", StringComparison.OrdinalIgnoreCase);
+
+            var contemNomeIndice =
+                mensagem.Contains(NomeIndiceUnicoTransacaoVenda, StringComparison.OrdinalIgnoreCase);
+
+            if (contemIndicadorDuplicidade && contemNomeIndice)
+                return true;
+
+            atual = atual.InnerException;
+        }
+
+        return false;
     }
 
     private async Task<string> GerarNumeroUnicoAsync(CancellationToken ct)

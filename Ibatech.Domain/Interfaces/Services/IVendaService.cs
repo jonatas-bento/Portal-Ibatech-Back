@@ -37,4 +37,16 @@ public interface IVendaService
         Guid vendaId,
         Guid itemId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Conclui uma venda em rascunho de maneira atômica: valida a venda e os
+    /// estoques, baixa os estoques, registra as movimentações, cria e liquida
+    /// a transação financeira de entrada e conclui a venda, persistindo tudo
+    /// em um único CommitAsync.
+    /// </summary>
+    Task<VendaDetalheDto> FinalizarAsync(
+        Guid vendaId,
+        FinalizarVendaDto dto,
+        Guid usuarioId,
+        CancellationToken cancellationToken = default);
 }

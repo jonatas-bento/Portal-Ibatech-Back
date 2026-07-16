@@ -253,7 +253,11 @@ public sealed class Venda : EntityBase
         Guid usuarioId,
         DateTime dataCancelamentoUtc)
     {
-        if (Status != StatusVenda.Rascunho)
+		if (Status == StatusVenda.Cancelada)
+			throw new InvalidOperationException(
+				"A venda já foi cancelada.");
+
+		if (Status != StatusVenda.Rascunho)
             throw new InvalidOperationException("Apenas vendas em rascunho podem ser canceladas.");
 
         if (usuarioId == Guid.Empty)

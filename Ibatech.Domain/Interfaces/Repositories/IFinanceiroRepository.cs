@@ -1,3 +1,4 @@
+using Ibatech.Domain.DTOs;
 using Ibatech.Domain.Entities;
 using Ibatech.Domain.Enums;
 
@@ -16,5 +17,26 @@ public interface IFinanceiroRepository : IRepositoryBase<TransacaoFinanceira>
         Guid vendaId,
         TipoTransacao tipo,
         string categoria,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Calcula o resumo financeiro detalhado (receitas, despesas, estornos,
+    /// totais líquidos, ticket médio e agrupamento por forma de pagamento)
+    /// inteiramente por meio de consultas agregadas no banco de dados
+    /// (SUM/COUNT/GROUP BY), sem materializar as transações do período.
+    /// </summary>
+    Task<ResumoFinanceiroDetalhadoDto> ObterResumoDetalhadoAsync(
+        FinanceiroFiltroDto filtro,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Lista as transações financeiras do período de forma paginada,
+    /// aplicando Count/Skip/Take diretamente na consulta traduzida para
+    /// SQL, sem paginação em memória.
+    /// </summary>
+    Task<ResultadoPaginadoDto<TransacaoFinanceiraResumoDto>> ListarPaginadoAsync(
+        FinanceiroFiltroDto filtro,
+        int pagina,
+        int tamanhoPagina,
         CancellationToken ct = default);
 }

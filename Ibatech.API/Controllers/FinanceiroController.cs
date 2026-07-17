@@ -56,5 +56,31 @@ namespace Ibatech.API.Controllers
         //        return NotFound(new { detail = ex.Message });
         //    }
         //}
+
+        [HttpGet("painel/resumo")]
+        [ProducesResponseType(typeof(ResumoFinanceiroDetalhadoDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<ActionResult<ResumoFinanceiroDetalhadoDto>> ObterResumoDetalhado(
+            [FromQuery] FinanceiroFiltroDto filtro,
+            CancellationToken cancellationToken)
+        {
+            var resultado = await financeiroService.ObterResumoDetalhadoAsync(filtro, cancellationToken);
+            return Ok(resultado);
+        }
+
+        [HttpGet("painel/transacoes")]
+        [ProducesResponseType(typeof(ResultadoPaginadoDto<TransacaoFinanceiraResumoDto>), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<ActionResult<ResultadoPaginadoDto<TransacaoFinanceiraResumoDto>>> ListarPaginado(
+            [FromQuery] FinanceiroFiltroDto filtro,
+            CancellationToken cancellationToken)
+        {
+            var resultado = await financeiroService.ListarPaginadoAsync(filtro, cancellationToken);
+            return Ok(resultado);
+        }
     }
 }

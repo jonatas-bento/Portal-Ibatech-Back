@@ -1,3 +1,4 @@
+using Ibatech.Domain.Constants;
 using Ibatech.Domain.DTOs;
 using Ibatech.Domain.Entities;
 using Ibatech.Domain.Enums;
@@ -19,8 +20,7 @@ public sealed class VendaService(
     IFinanceiroRepository financeiroRepository,
     IUnitOfWork uow) : IVendaService
 {
-    private const string CategoriaVenda = "Venda";
-    private const string CategoriaEstornoVenda = "Estorno de Venda";
+
 
     public async Task<IReadOnlyCollection<VendaResumoDto>> ListarAsync(
 
@@ -275,9 +275,10 @@ public sealed class VendaService(
             venda.ValorTotal,
             TipoTransacao.Receita,
             dataOperacaoUtc,
-            CategoriaVenda,
+            CategoriasFinanceiras.Venda,
             usuario.Id,
             venda.Id);
+
 
         transacao.Liquidar(dataOperacaoUtc);
 
@@ -391,7 +392,7 @@ public sealed class VendaService(
         // 4. Validar a situação financeira: precisa existir a Receita
         //    original e não pode existir compensação de estorno anterior.
         var existeReceitaOriginal = await financeiroRepository.ExisteTransacaoDaVendaAsync(
-            venda.Id, TipoTransacao.Receita, CategoriaVenda, cancellationToken);
+            venda.Id, TipoTransacao.Receita, CategoriasFinanceiras.Venda, cancellationToken);
 
         if (!existeReceitaOriginal)
         {
@@ -400,7 +401,8 @@ public sealed class VendaService(
         }
 
         var existeCompensacaoAnterior = await financeiroRepository.ExisteTransacaoDaVendaAsync(
-            venda.Id, TipoTransacao.Despesa, CategoriaEstornoVenda, cancellationToken);
+            venda.Id, TipoTransacao.Despesa, CategoriasFinanceiras.EstornoVenda, cancellationToken);
+
 
         if (existeCompensacaoAnterior)
         {
@@ -459,9 +461,10 @@ public sealed class VendaService(
             venda.ValorTotal,
             TipoTransacao.Despesa,
             dataOperacaoUtc,
-            CategoriaEstornoVenda,
+            CategoriasFinanceiras.EstornoVenda,
             usuario.Id,
             venda.Id);
+
 
         compensacao.Liquidar(dataOperacaoUtc);
 

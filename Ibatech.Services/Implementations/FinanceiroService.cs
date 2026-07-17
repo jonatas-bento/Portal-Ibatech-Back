@@ -85,5 +85,48 @@ public sealed class FinanceiroService(
         };
     }
 
-    
+    private static void ValidarPeriodo(FinanceiroFiltroDto filtro)
+    {
+        if (!filtro.DataInicio.HasValue)
+            throw new ArgumentException("Data inicial é obrigatória.");
+
+        if (!filtro.DataFim.HasValue)
+            throw new ArgumentException("Data final é obrigatória.");
+
+        if (filtro.DataInicio.Value >= filtro.DataFim.Value)
+            throw new ArgumentException("A data inicial deve ser anterior à data final.");
+
+        if ((filtro.DataFim.Value - filtro.DataInicio.Value).TotalDays > 366)
+            throw new ArgumentException("O período máximo permitido é de 366 dias.");
+    }
+
+    private static (int pagina, int tamanhoPagina) NormalizarPaginacao(FinanceiroFiltroDto filtro)
+    {
+        var paginaNormalizada = filtro.Pagina < 1 ? 1 : filtro.Pagina;
+
+        var tamanhoNormalizado = filtro.TamanhoPagina switch
+        {
+            < 1 => 20,
+            > 100 => 100,
+            _ => filtro.TamanhoPagina
+        };
+
+        return (paginaNormalizada, tamanhoNormalizado);
+    }
+
+    public async Task<ResumoFinanceiroDetalhadoDto> ObterResumoDetalhadoAsync(FinanceiroFiltroDto filtro, CancellationToken ct = default)
+    {
+        ValidarPeriodo(filtro);
+
+        return await financeiroRepo.ObterResumoDetalhadoAsync(filtro, ct);
+    }
+
+    public async Task<ResultadoPaginadoDto<TransacaoFinanceiraResumoDto>> ListarPaginadoAsync(FinanceiroFiltroDto filtro, CancellationToken ct = default)
+    {
+        ValidarPeriodo(filtro);
+
+        var (paginaNormalizada, tamanhoNormalizado) = NormalizarPaginacao(filtro);
+
+        return await financeiroRepo.ListarPaginadoAsync(filtro, paginaNormalizada, tamanhoNormalizado, ct);
+    }
 }

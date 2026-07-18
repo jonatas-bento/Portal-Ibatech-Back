@@ -20,6 +20,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Ibatech.API;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.HttpOverrides;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -211,6 +212,13 @@ builder.Services.AddOpenApi(opts =>
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<IbatechDbContext>("mysql");
 
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+});
+
 var app = builder.Build();
 
 // ── 10. Pipeline HTTP ─────────────────────────────────────────────────────────
@@ -224,6 +232,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseCors("AngularClient");
 
@@ -237,13 +246,19 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 // ── 11. Auto-Migration em dev ─────────────────────────────────────────────────
-if (app.Environment.IsDevelopment())
+
+var runMigrations = config.GetValue<bool>("Database:RunMigrations");
+
+if (runMigrations)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<IbatechDbContext>();
     await db.Database.MigrateAsync();
 }
 
-await DataSeeder.SeedAsync(app.Services); // ← adicionar esta linha
+if (config.GetValue<bool>("Database:RunSeeder"))
+{
+    await DataSeeder.SeedAsync(app.Services);
+}
 
 await app.RunAsync();

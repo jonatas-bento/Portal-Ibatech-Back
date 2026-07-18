@@ -178,6 +178,12 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+releases/
+
+# Custom ignores
+appsettings.Production.json
+.env
+*.secrets
 
 # Publish Web Output
 *.[Pp]ublish.xml

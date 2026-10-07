@@ -1,4 +1,5 @@
 using Ibatech.Domain.Enums;
+
 namespace Ibatech.Services.DTOs.Produto;
 
 public sealed record ProdutoCreateDto(
@@ -11,5 +12,9 @@ public sealed record ProdutoCreateDto(
     string? Descricao = null,
     string? CodigoSku = null,
     string? Marca = null,
-    string? Modelo = null
+    string? Modelo = null,
+    string? CodigoFornecedor = null,
+    string? CodigoBarras = null,
+    string? Ncm = null,
+    string UnidadeComercial = "UN"
 );

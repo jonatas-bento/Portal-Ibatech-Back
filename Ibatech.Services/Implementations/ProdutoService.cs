@@ -18,7 +18,15 @@ public sealed class ProdutoService(
         ProdutoCreateDto dto,
         CancellationToken ct = default)
     {
-        var tipo = Enum.Parse<TipoProduto>(dto.Tipo);
+        if (!Enum.TryParse<TipoProduto>(
+                dto.Tipo,
+                true,
+                out var tipo))
+        {
+            throw new ArgumentException(
+                $"Tipo de produto '{dto.Tipo}' é inválido.");
+        }
+
         var produto = new Produto(
             dto.Nome,
             tipo,
@@ -27,37 +35,64 @@ public sealed class ProdutoService(
             dto.Descricao,
             dto.CodigoSku,
             dto.Marca,
-            dto.Modelo);
+            dto.Modelo,
+            dto.CodigoFornecedor,
+            dto.CodigoBarras,
+            dto.Ncm,
+            dto.UnidadeComercial);
 
-        await produtoRepo.AdicionarAsync(produto, ct);
-        await uow.CommitAsync(ct); // persiste para obter o Id
+        await produtoRepo.AdicionarAsync(
+            produto,
+            ct);
+
+        await uow.CommitAsync(ct);
 
         var estoque = new Estoque(
             produto.Id,
             dto.QuantidadeInicial,
             dto.QuantidadeMinima);
 
-        await estoqueRepo.AdicionarAsync(estoque, ct);
+        await estoqueRepo.AdicionarAsync(
+            estoque,
+            ct);
+
+        /*
+         * Na criação manual mantemos o comportamento atual:
+         * cria Produto + Estoque.
+         *
+         * A geração automática de MovimentacaoEstoque será tratada
+         * separadamente para não alterar silenciosamente o contrato
+         * existente deste endpoint neste momento.
+         */
         await uow.CommitAsync(ct);
 
-        // Recarrega com navegação
-        var produtoCompleto = await produtoRepo.ObterComEstoqueAsync(produto.Id, ct);
+        var produtoCompleto =
+            await produtoRepo.ObterComEstoqueAsync(
+                produto.Id,
+                ct);
+
         return produtoCompleto!.ToDomainDto();
     }
 
     public async Task<IEnumerable<ProdutoResponseDto>> ListarAsync(
         CancellationToken ct = default)
     {
-        var produtos = await produtoRepo.ListarComEstoqueAsync(ct);
+        var produtos =
+            await produtoRepo.ListarComEstoqueAsync(ct);
+
         return produtos.ToDomainDtoList();
     }
 
-    public async Task<IEnumerable<ProdutoResponseDto>> ListarAlertasReposicaoAsync(
-        CancellationToken ct = default)
+    public async Task<IEnumerable<ProdutoResponseDto>>
+        ListarAlertasReposicaoAsync(
+            CancellationToken ct = default)
     {
-        var produtos = await produtoRepo.ListarComEstoqueAsync(ct);
+        var produtos =
+            await produtoRepo.ListarComEstoqueAsync(ct);
+
         return produtos
-            .Where(p => p.Estoque?.EstaBaixoDoMinimo == true)
+            .Where(p =>
+                p.Estoque?.EstaBaixoDoMinimo == true)
             .ToDomainDtoList();
     }
 
@@ -69,19 +104,41 @@ public sealed class ProdutoService(
         string? motivo,
         CancellationToken ct = default)
     {
-        var estoque = await estoqueRepo.ObterPorProdutoAsync(produtoId, ct)
-            ?? throw new KeyNotFoundException("Estoque não encontrado para o produto.");
+        var estoque =
+            await estoqueRepo.ObterPorProdutoAsync(
+                produtoId,
+                ct)
+            ?? throw new KeyNotFoundException(
+                "Estoque não encontrado para o produto.");
 
         if (tipo == TipoMovimentacao.Entrada)
+        {
             estoque.Entrada(quantidade);
+        }
         else if (tipo == TipoMovimentacao.Saida)
+        {
             estoque.Saida(quantidade);
+        }
+        else
+        {
+            throw new ArgumentException(
+                "Tipo de movimentação inválido para esta operação.");
+        }
 
-        var movimentacao = new MovimentacaoEstoque(
-            produtoId, tipo, quantidade, usuarioId, motivo);
+        var movimentacao =
+            new MovimentacaoEstoque(
+                produtoId,
+                tipo,
+                quantidade,
+                usuarioId,
+                motivo);
 
         estoqueRepo.Atualizar(estoque);
-        await produtoRepo.AdicionarMovimentacaoAsync(movimentacao, ct);
+
+        await produtoRepo.AdicionarMovimentacaoAsync(
+            movimentacao,
+            ct);
+
         await uow.CommitAsync(ct);
     }
 }

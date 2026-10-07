@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using Ibatech.Domain.DTOs;
 using Ibatech.Domain.Interfaces.Services;
@@ -10,7 +11,9 @@ namespace Ibatech.API.Controllers;
 [Route("api/entradas-compras")]
 [Authorize]
 public sealed class EntradasComprasController(
-    IEntradaCompraService service) : ControllerBase
+    IEntradaCompraService service,
+    IEntradaCompraImportacaoService importacaoService)
+    : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EntradaCompraResumoDto>>> Listar(
@@ -60,6 +63,68 @@ public sealed class EntradasComprasController(
             ObterUsuarioId(),
             ct));
 
+    [HttpPost("importar")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<EntradaCompraImportacaoResultadoDto>> Importar(
+        [FromForm] IFormFile arquivo,
+        [FromForm] Guid fornecedorId,
+        [FromForm] string numeroDocumento,
+        [FromForm] DateTime dataEntrada,
+        [FromForm] string valorFrete,
+        [FromForm] string valorDesconto,
+        [FromForm] string outrasDespesas,
+        [FromForm] string? observacao,
+        CancellationToken ct)
+    {
+        if (arquivo is null)
+            throw new ArgumentException(
+                "Arquivo é obrigatório.");
+
+        var frete =
+            ParseValorMonetario(
+                valorFrete,
+                nameof(valorFrete));
+
+        var desconto =
+            ParseValorMonetario(
+                valorDesconto,
+                nameof(valorDesconto));
+
+        var despesas =
+            ParseValorMonetario(
+                outrasDespesas,
+                nameof(outrasDespesas));
+
+        await using var stream =
+            arquivo.OpenReadStream();
+
+        var resultado =
+            await importacaoService.ImportarAsync(
+                stream,
+                arquivo.FileName,
+                arquivo.Length,
+                fornecedorId,
+                numeroDocumento,
+                dataEntrada,
+                frete,
+                desconto,
+                despesas,
+                observacao,
+                ObterUsuarioId(),
+                ct);
+
+        if (!resultado.Sucesso)
+            return BadRequest(resultado);
+
+        return CreatedAtAction(
+            nameof(Obter),
+            new
+            {
+                id = resultado.EntradaCompraId
+            },
+            resultado);
+    }
+
     private Guid ObterUsuarioId()
     {
         var valor =
@@ -71,5 +136,66 @@ public sealed class EntradasComprasController(
                 "Usuário autenticado inválido.");
 
         return id;
+    }
+
+    private static decimal ParseValorMonetario(
+        string? valor,
+        string campo)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+            return 0m;
+
+        var texto = valor
+            .Trim()
+            .Replace("R$", "", StringComparison.OrdinalIgnoreCase)
+            .Replace(" ", "");
+
+        var posVirgula = texto.LastIndexOf(',');
+        var posPonto = texto.LastIndexOf('.');
+
+        string normalizado;
+
+        if (posVirgula >= 0 && posPonto >= 0)
+        {
+            // 1.234,56 -> 1234.56
+            // 1,234.56 -> 1234.56
+            normalizado =
+                posVirgula > posPonto
+                    ? texto
+                        .Replace(".", "")
+                        .Replace(",", ".")
+                    : texto.Replace(",", "");
+        }
+        else if (posVirgula >= 0)
+        {
+            // 11,00 -> 11.00
+            normalizado =
+                texto.Replace(",", ".");
+        }
+        else
+        {
+            // 11.00 ou 11
+            normalizado = texto;
+        }
+
+        if (!decimal.TryParse(
+                normalizado,
+                NumberStyles.AllowDecimalPoint |
+                NumberStyles.AllowLeadingSign,
+                CultureInfo.InvariantCulture,
+                out var resultado) ||
+            resultado < 0)
+        {
+            throw new ArgumentException(
+                $"Valor inválido para {campo}: '{valor}'.");
+        }
+
+        if (decimal.Round(resultado, 2) != resultado)
+        {
+            throw new ArgumentException(
+                $"{campo} não pode ter mais de duas casas decimais.");
+        }
+
+        return resultado;
     }
 }

@@ -110,6 +110,7 @@ builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IVendaService, VendaService>();
 builder.Services.AddScoped<IFornecedorService, FornecedorService>();
 builder.Services.AddScoped<IEntradaCompraService, EntradaCompraService>();
+builder.Services.AddScoped<IEntradaCompraImportacaoService, EntradaCompraImportacaoService>();
 
 // ── 7. Controllers + JSON ─────────────────────────────────────────────────────
 builder.Services

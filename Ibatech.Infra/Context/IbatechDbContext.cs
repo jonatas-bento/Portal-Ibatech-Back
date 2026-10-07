@@ -1,4 +1,3 @@
-// Ibatech.Infra/Context/IbatechDbContext.cs
 using Ibatech.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +8,17 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
 {
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<ProjetoRequisitos> ProjetosRequisitos => Set<ProjetoRequisitos>();
+
     public DbSet<Produto> Produtos => Set<Produto>();
     public DbSet<Estoque> Estoques => Set<Estoque>();
     public DbSet<MovimentacaoEstoque> Movimentacoes => Set<MovimentacaoEstoque>();
+
+    public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
+    public DbSet<EntradaCompra> EntradasCompras => Set<EntradaCompra>();
+    public DbSet<EntradaCompraItem> EntradaCompraItens => Set<EntradaCompraItem>();
+
     public DbSet<TransacaoFinanceira> TransacoesFinanceiras => Set<TransacaoFinanceira>();
+
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Venda> Vendas => Set<Venda>();
     public DbSet<VendaItem> VendaItens => Set<VendaItem>();
@@ -21,16 +27,24 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
     {
         base.OnModelCreating(mb);
 
-        // Aplica as configurações existentes.
-        mb.ApplyConfigurationsFromAssembly(typeof(IbatechDbContext).Assembly);
+        // Aplica configurações IEntityTypeConfiguration existentes.
+        mb.ApplyConfigurationsFromAssembly(
+            typeof(IbatechDbContext).Assembly);
 
         // Define explicitamente os nomes físicos das tabelas.
         mb.Entity<Usuario>().ToTable("Usuarios");
         mb.Entity<ProjetoRequisitos>().ToTable("ProjetosRequisitos");
+
         mb.Entity<Produto>().ToTable("Produtos");
         mb.Entity<Estoque>().ToTable("Estoques");
         mb.Entity<MovimentacaoEstoque>().ToTable("Movimentacoes");
+
+        mb.Entity<Fornecedor>().ToTable("Fornecedores");
+        mb.Entity<EntradaCompra>().ToTable("EntradasCompras");
+        mb.Entity<EntradaCompraItem>().ToTable("EntradaCompraItens");
+
         mb.Entity<TransacaoFinanceira>().ToTable("TransacoesFinanceiras");
+
         mb.Entity<Cliente>().ToTable("Clientes");
         mb.Entity<Venda>().ToTable("Vendas");
         mb.Entity<VendaItem>().ToTable("VendaItens");
@@ -38,17 +52,21 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
         // Filtro global de soft-delete.
         foreach (var entityType in mb.Model.GetEntityTypes())
         {
-            var propertyAtivo = entityType.ClrType.GetProperty("Ativo");
+            var propertyAtivo =
+                entityType.ClrType.GetProperty("Ativo");
 
             if (propertyAtivo is null)
                 continue;
 
-            var parametro = System.Linq.Expressions.Expression.Parameter(
-                entityType.ClrType,
-                "e");
+            var parametro =
+                System.Linq.Expressions.Expression.Parameter(
+                    entityType.ClrType,
+                    "e");
 
             var corpoPropriedade =
-                System.Linq.Expressions.Expression.Property(parametro, "Ativo");
+                System.Linq.Expressions.Expression.Property(
+                    parametro,
+                    "Ativo");
 
             var constanteTrue =
                 System.Linq.Expressions.Expression.Constant(true);
@@ -75,8 +93,11 @@ public sealed class IbatechDbContext(DbContextOptions<IbatechDbContext> options)
                      .Entries()
                      .Where(e => e.State == EntityState.Modified))
         {
-            if (entry.Entity is Ibatech.Domain.Entities.Base.EntityBase entity)
+            if (entry.Entity is
+                Ibatech.Domain.Entities.Base.EntityBase entity)
+            {
                 entity.MarcarAtualizado();
+            }
         }
 
         return base.SaveChangesAsync(ct);

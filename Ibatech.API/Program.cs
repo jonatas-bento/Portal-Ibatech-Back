@@ -96,6 +96,8 @@ builder.Services.AddScoped<IEstoqueRepository, EstoqueRepository>();
 builder.Services.AddScoped<IFinanceiroRepository, FinanceiroRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IVendaRepository, VendaRepository>();
+builder.Services.AddScoped<IFornecedorRepository, FornecedorRepository>();
+builder.Services.AddScoped<IEntradaCompraRepository, EntradaCompraRepository>();
 
 // ── 6. Injeção de Dependência — Serviços ─────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -106,6 +108,8 @@ builder.Services.AddScoped<IProdutoImportacaoService, ProdutoImportacaoService>(
 builder.Services.AddScoped<IFinanceiroService, FinanceiroService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IVendaService, VendaService>();
+builder.Services.AddScoped<IFornecedorService, FornecedorService>();
+builder.Services.AddScoped<IEntradaCompraService, EntradaCompraService>();
 
 // ── 7. Controllers + JSON ─────────────────────────────────────────────────────
 builder.Services

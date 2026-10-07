@@ -87,6 +87,10 @@ public sealed class EntradaCompra : EntityBase
     {
         GarantirRascunho();
 
+        if (_itens.Any(i => i.ProdutoId == produtoId))
+            throw new InvalidOperationException(
+                "Produto já adicionado à entrada.");
+
         var item = new EntradaCompraItem(
             Id,
             produtoId,
@@ -104,7 +108,23 @@ public sealed class EntradaCompra : EntityBase
         return item;
     }
 
+    public void ValidarConfirmacao(DateTime dataConfirmacaoUtc)
+    {
+        ValidarConfirmacaoInterno(dataConfirmacaoUtc);
+    }
+
     public void Confirmar(DateTime dataConfirmacaoUtc)
+    {
+        ValidarConfirmacaoInterno(dataConfirmacaoUtc);
+
+        RecalcularTotaisERateios();
+
+        Status = StatusEntradaCompra.Confirmada;
+        DataConfirmacao = dataConfirmacaoUtc;
+        AtualizadoEm = dataConfirmacaoUtc;
+    }
+
+    private void ValidarConfirmacaoInterno(DateTime dataConfirmacaoUtc)
     {
         GarantirRascunho();
 
@@ -116,11 +136,13 @@ public sealed class EntradaCompra : EntityBase
             throw new ArgumentException(
                 "Data de confirmação inválida.");
 
-        RecalcularTotaisERateios();
+        if (ValorProdutos <= 0)
+            throw new InvalidOperationException(
+                "O valor dos produtos deve ser maior que zero.");
 
-        Status = StatusEntradaCompra.Confirmada;
-        DataConfirmacao = dataConfirmacaoUtc;
-        AtualizadoEm = dataConfirmacaoUtc;
+        if (ValorTotal < 0)
+            throw new InvalidOperationException(
+                "O valor total da entrada não pode ser negativo.");
     }
 
     private void RecalcularTotaisERateios()

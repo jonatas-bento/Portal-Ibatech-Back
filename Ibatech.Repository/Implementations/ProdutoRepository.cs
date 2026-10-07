@@ -11,7 +11,8 @@ public sealed class ProdutoRepository(IbatechDbContext ctx)
     : RepositoryBase<Produto>(ctx), IProdutoRepository
 {
     public async Task<Produto?> ObterComEstoqueAsync(
-        Guid id, CancellationToken ct = default) =>
+        Guid id,
+        CancellationToken ct = default) =>
         await DbSet
             .Include(p => p.Estoque)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -25,15 +26,18 @@ public sealed class ProdutoRepository(IbatechDbContext ctx)
             .ToListAsync(ct);
 
     public async Task AdicionarMovimentacaoAsync(
-        MovimentacaoEstoque mov, CancellationToken ct = default) =>
+        MovimentacaoEstoque mov,
+        CancellationToken ct = default) =>
         await ctx.Movimentacoes.AddAsync(mov, ct);
 
     public async Task AddRangeAsync(
-        IEnumerable<Produto> produtos, CancellationToken ct = default) =>
+        IEnumerable<Produto> produtos,
+        CancellationToken ct = default) =>
         await DbSet.AddRangeAsync(produtos, ct);
 
     public async Task<IReadOnlyCollection<string>> ObterSkusExistentesAsync(
-        IEnumerable<string> skus, CancellationToken ct = default)
+        IEnumerable<string> skus,
+        CancellationToken ct = default)
     {
         var skusNormalizados = skus
             .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -46,8 +50,24 @@ public sealed class ProdutoRepository(IbatechDbContext ctx)
 
         return await DbSet
             .AsNoTracking()
-            .Where(p => p.CodigoSku != null && skusNormalizados.Contains(p.CodigoSku))
+            .Where(p =>
+                p.CodigoSku != null &&
+                skusNormalizados.Contains(p.CodigoSku))
             .Select(p => p.CodigoSku!)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyCollection<Produto>> ObterPorIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+            return Array.Empty<Produto>();
+
+        // Deliberadamente SEM AsNoTracking:
+        // estes produtos serão modificados antes do CommitAsync.
+        return await DbSet
+            .Where(p => ids.Contains(p.Id))
             .ToListAsync(ct);
     }
 }

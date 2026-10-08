@@ -18,28 +18,30 @@ public sealed class ProdutoService(
         ProdutoCreateDto dto,
         CancellationToken ct = default)
     {
-        if (!Enum.TryParse<TipoProduto>(
-                dto.Tipo,
-                true,
-                out var tipo))
-        {
-            throw new ArgumentException(
-                $"Tipo de produto '{dto.Tipo}' é inválido.");
-        }
+        ArgumentNullException.ThrowIfNull(dto);
 
-        var produto = new Produto(
-            dto.Nome,
-            tipo,
-            dto.PrecoCompra,
-            dto.PrecoVenda,
-            dto.Descricao,
+        var tipo =
+            ParseTipo(dto.Tipo);
+
+        await ValidarSkuDisponivelAsync(
+            produtoIdAtual: null,
             dto.CodigoSku,
-            dto.Marca,
-            dto.Modelo,
-            dto.CodigoFornecedor,
-            dto.CodigoBarras,
-            dto.Ncm,
-            dto.UnidadeComercial);
+            ct);
+
+        var produto =
+            new Produto(
+                dto.Nome,
+                tipo,
+                dto.PrecoCompra,
+                dto.PrecoVenda,
+                dto.Descricao,
+                dto.CodigoSku,
+                dto.Marca,
+                dto.Modelo,
+                dto.CodigoFornecedor,
+                dto.CodigoBarras,
+                dto.Ncm,
+                dto.UnidadeComercial);
 
         await produtoRepo.AdicionarAsync(
             produto,
@@ -47,10 +49,11 @@ public sealed class ProdutoService(
 
         await uow.CommitAsync(ct);
 
-        var estoque = new Estoque(
-            produto.Id,
-            dto.QuantidadeInicial,
-            dto.QuantidadeMinima);
+        var estoque =
+            new Estoque(
+                produto.Id,
+                dto.QuantidadeInicial,
+                dto.QuantidadeMinima);
 
         await estoqueRepo.AdicionarAsync(
             estoque,
@@ -72,6 +75,66 @@ public sealed class ProdutoService(
                 ct);
 
         return produtoCompleto!.ToDomainDto();
+    }
+
+    public async Task<ProdutoResponseDto> AtualizarAsync(
+        Guid id,
+        ProdutoUpdateDto dto,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        if (id == Guid.Empty)
+            throw new ArgumentException(
+                "ID do produto inválido.");
+
+        var produto =
+            await produtoRepo.ObterComEstoqueAsync(
+                id,
+                ct)
+            ?? throw new KeyNotFoundException(
+                "Produto não encontrado.");
+
+        if (!produto.Ativo)
+            throw new InvalidOperationException(
+                "Produto inativo não pode ser alterado.");
+
+        var tipo =
+            ParseTipo(dto.Tipo);
+
+        await ValidarSkuDisponivelAsync(
+            produto.Id,
+            dto.CodigoSku,
+            ct);
+
+        produto.AtualizarCadastro(
+            dto.Nome,
+            tipo,
+            dto.PrecoVenda,
+            dto.Descricao,
+            dto.CodigoSku,
+            dto.CodigoFornecedor,
+            dto.CodigoBarras,
+            dto.Ncm,
+            dto.UnidadeComercial,
+            dto.Marca,
+            dto.Modelo);
+
+        var estoque =
+            produto.Estoque
+            ?? throw new InvalidOperationException(
+                "Estoque não encontrado para o produto.");
+
+        estoque.AjustarMinimo(
+            dto.QuantidadeMinima);
+
+        await uow.CommitAsync(ct);
+
+        /*
+         * Produto e Estoque continuam rastreados e já possuem
+         * os valores persistidos.
+         */
+        return produto.ToDomainDto();
     }
 
     public async Task<IEnumerable<ProdutoResponseDto>> ListarAsync(
@@ -140,5 +203,44 @@ public sealed class ProdutoService(
             ct);
 
         await uow.CommitAsync(ct);
+    }
+
+    private static TipoProduto ParseTipo(
+        string tipo)
+    {
+        if (!Enum.TryParse<TipoProduto>(
+                tipo,
+                true,
+                out var resultado))
+        {
+            throw new ArgumentException(
+                $"Tipo de produto '{tipo}' é inválido.");
+        }
+
+        return resultado;
+    }
+
+    private async Task ValidarSkuDisponivelAsync(
+        Guid? produtoIdAtual,
+        string? codigoSku,
+        CancellationToken ct)
+    {
+        var sku =
+            codigoSku?.Trim();
+
+        if (string.IsNullOrWhiteSpace(sku))
+            return;
+
+        var duplicado =
+            await produtoRepo.ExisteAsync(
+                p =>
+                    p.CodigoSku == sku &&
+                    (!produtoIdAtual.HasValue ||
+                     p.Id != produtoIdAtual.Value),
+                ct);
+
+        if (duplicado)
+            throw new InvalidOperationException(
+                $"Já existe um produto cadastrado com o SKU '{sku}'.");
     }
 }

@@ -49,6 +49,40 @@ namespace Ibatech.API.Controllers
             }
         }
 
+        [HttpPut("{id:guid}")]
+        [Authorize(Policy = "AdminOuFuncionario")]
+        public async Task<ActionResult<ProdutoResponseDto>> Atualizar(
+            Guid id,
+            [FromBody] ProdutoUpdateDto dto,
+            CancellationToken ct)
+        {
+            try
+            {
+                var produto =
+                    await produtoService.AtualizarAsync(
+                        id,
+                        dto,
+                        ct);
+
+                return Ok(produto);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(
+                    new { detail = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(
+                    new { detail = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(
+                    new { detail = ex.Message });
+            }
+        }
+
         [HttpPost("{id:guid}/movimentar")]
         [Authorize(Policy = "AdminOuFuncionario")]
         public async Task<IActionResult> RegistrarMovimentacao(

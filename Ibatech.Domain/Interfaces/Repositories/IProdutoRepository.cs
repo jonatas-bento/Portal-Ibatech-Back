@@ -1,11 +1,33 @@
 using Ibatech.Domain.Entities;
+
 namespace Ibatech.Domain.Interfaces.Repositories;
 
 public interface IProdutoRepository : IRepositoryBase<Produto>
 {
-    Task<Produto?> ObterComEstoqueAsync(Guid id, CancellationToken ct = default);
-    Task<IEnumerable<Produto>> ListarComEstoqueAsync(CancellationToken ct = default);
-    Task AdicionarMovimentacaoAsync(MovimentacaoEstoque mov, CancellationToken ct = default);
-    Task AddRangeAsync(IEnumerable<Produto> produtos, CancellationToken ct = default);
-    Task<IReadOnlyCollection<string>> ObterSkusExistentesAsync(IEnumerable<string> skus, CancellationToken ct = default);
+    Task<Produto?> ObterComEstoqueAsync(
+        Guid id,
+        CancellationToken ct = default);
+
+    Task<IEnumerable<Produto>> ListarComEstoqueAsync(
+        CancellationToken ct = default);
+
+    Task AdicionarMovimentacaoAsync(
+        MovimentacaoEstoque mov,
+        CancellationToken ct = default);
+
+    Task AddRangeAsync(
+        IEnumerable<Produto> produtos,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyCollection<string>> ObterSkusExistentesAsync(
+        IEnumerable<string> skus,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Carrega produtos de forma rastreada para operações que
+    /// modificarão seus dados antes do CommitAsync.
+    /// </summary>
+    Task<IReadOnlyCollection<Produto>> ObterPorIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default);
 }

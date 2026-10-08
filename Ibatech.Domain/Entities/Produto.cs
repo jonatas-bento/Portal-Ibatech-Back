@@ -18,8 +18,10 @@ public class Produto : EntityBase
     public TipoProduto Tipo { get; private set; }
     public decimal PrecoCompra { get; private set; }
     public decimal PrecoVenda { get; private set; }
+
     public string? Marca { get; private set; }
     public string? Modelo { get; private set; }
+
     public string? Ncm { get; private set; }
     public string UnidadeComercial { get; private set; } = "UN";
 
@@ -47,35 +49,106 @@ public class Produto : EntityBase
         string? ncm = null,
         string? unidadeComercial = "UN")
     {
-        if (string.IsNullOrWhiteSpace(nome))
-            throw new ArgumentException("Nome do produto é obrigatório.", nameof(nome));
-
+        ValidarNome(nome);
         ValidarPrecos(precoCompra, precoVenda);
 
         Nome = nome.Trim();
         Tipo = tipo;
+
         PrecoCompra = precoCompra;
         PrecoVenda = precoVenda;
+
         Descricao = Normalizar(descricao);
+
         CodigoSku = Normalizar(codigoSku);
-        Marca = Normalizar(marca);
-        Modelo = Normalizar(modelo);
         CodigoFornecedor = Normalizar(codigoFornecedor);
         CodigoBarras = Normalizar(codigoBarras);
+
+        Marca = Normalizar(marca);
+        Modelo = Normalizar(modelo);
+
         Ncm = Normalizar(ncm);
-        UnidadeComercial = Normalizar(unidadeComercial) ?? "UN";
+        UnidadeComercial =
+            Normalizar(unidadeComercial) ?? "UN";
     }
 
+    /// <summary>
+    /// Atualiza apenas os dados que podem ser mantidos pelo cadastro
+    /// comercial do produto.
+    ///
+    /// PrecoCompra não é recebido aqui: o custo corrente é atualizado
+    /// exclusivamente pelo fluxo de entrada de compra.
+    /// </summary>
+    public void AtualizarCadastro(
+        string nome,
+        TipoProduto tipo,
+        decimal precoVenda,
+        string? descricao,
+        string? codigoSku,
+        string? codigoFornecedor,
+        string? codigoBarras,
+        string? ncm,
+        string? unidadeComercial,
+        string? marca,
+        string? modelo)
+    {
+        ValidarNome(nome);
+
+        if (precoVenda < 0)
+            throw new ArgumentException(
+                "Preço de venda não pode ser negativo.");
+
+        Nome = nome.Trim();
+        Tipo = tipo;
+        PrecoVenda = precoVenda;
+
+        Descricao = Normalizar(descricao);
+
+        CodigoSku = Normalizar(codigoSku);
+        CodigoFornecedor = Normalizar(codigoFornecedor);
+        CodigoBarras = Normalizar(codigoBarras);
+
+        Ncm = Normalizar(ncm);
+        UnidadeComercial =
+            Normalizar(unidadeComercial) ?? "UN";
+
+        Marca = Normalizar(marca);
+        Modelo = Normalizar(modelo);
+
+        MarcarAtualizado();
+    }
+
+    /// <summary>
+    /// Mantido para operações internas que precisam atualizar o custo
+    /// corrente, como a confirmação de uma EntradaCompra.
+    ///
+    /// Não deve ser utilizado pelo formulário comum de edição de produto.
+    /// </summary>
     public void AtualizarPrecos(
         decimal novoPrecoCompra,
         decimal novoPrecoVenda)
     {
-        ValidarPrecos(novoPrecoCompra, novoPrecoVenda);
+        ValidarPrecos(
+            novoPrecoCompra,
+            novoPrecoVenda);
 
         PrecoCompra = novoPrecoCompra;
         PrecoVenda = novoPrecoVenda;
 
         MarcarAtualizado();
+    }
+
+    private static void ValidarNome(string nome)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+            throw new ArgumentException(
+                "Nome do produto é obrigatório.",
+                nameof(nome));
+
+        if (nome.Trim().Length > 200)
+            throw new ArgumentException(
+                "Nome do produto deve possuir no máximo 200 caracteres.",
+                nameof(nome));
     }
 
     private static void ValidarPrecos(
@@ -93,7 +166,9 @@ public class Produto : EntityBase
 
     private static string? Normalizar(string? valor)
     {
-        var resultado = valor?.Trim();
+        var resultado =
+            valor?.Trim();
+
         return string.IsNullOrWhiteSpace(resultado)
             ? null
             : resultado;

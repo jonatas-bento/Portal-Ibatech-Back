@@ -7,7 +7,7 @@ namespace Ibatech.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "ApenasAdmin")]
+[Authorize(Roles = "Admin,Estoque")]
 public sealed class FornecedoresController(
     IFornecedorService service) : ControllerBase
 {

@@ -9,7 +9,7 @@ namespace Ibatech.API.Controllers;
 
 [ApiController]
 [Route("api/entradas-compras")]
-[Authorize]
+[Authorize(Roles = "Admin,Estoque")]
 public sealed class EntradasComprasController(
     IEntradaCompraService service,
     IEntradaCompraImportacaoService importacaoService)

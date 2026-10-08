@@ -11,8 +11,20 @@ public sealed record CriarEntradaCompraDto(
     decimal OutrasDespesas,
     string? Observacao);
 
+public sealed record AtualizarEntradaCompraDto(
+    string NumeroDocumento,
+    DateTime DataEntrada,
+    decimal ValorFrete,
+    decimal ValorDesconto,
+    decimal OutrasDespesas,
+    string? Observacao);
+
 public sealed record AdicionarEntradaCompraItemDto(
     Guid ProdutoId,
+    int Quantidade,
+    decimal PrecoUnitarioCompra);
+
+public sealed record AtualizarEntradaCompraItemDto(
     int Quantidade,
     decimal PrecoUnitarioCompra);
 

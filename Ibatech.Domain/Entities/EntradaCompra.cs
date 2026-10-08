@@ -108,6 +108,98 @@ public sealed class EntradaCompra : EntityBase
         return item;
     }
 
+    public void AtualizarCabecalho(
+        string numeroDocumento,
+        DateTime dataEntrada,
+        decimal valorFrete,
+        decimal valorDesconto,
+        decimal outrasDespesas,
+        string? observacao)
+    {
+        GarantirRascunho();
+
+        if (string.IsNullOrWhiteSpace(numeroDocumento))
+            throw new ArgumentException(
+                "Número do documento é obrigatório.");
+
+        if (dataEntrada == default)
+            throw new ArgumentException(
+                "Data de entrada inválida.");
+
+        if (valorFrete < 0)
+            throw new ArgumentException(
+                "Valor de frete não pode ser negativo.");
+
+        if (valorDesconto < 0)
+            throw new ArgumentException(
+                "Valor de desconto não pode ser negativo.");
+
+        if (outrasDespesas < 0)
+            throw new ArgumentException(
+                "Outras despesas não podem ser negativas.");
+
+        NumeroDocumento = numeroDocumento.Trim();
+        DataEntrada = dataEntrada;
+
+        ValorFrete = valorFrete;
+        ValorDesconto = valorDesconto;
+        OutrasDespesas = outrasDespesas;
+
+        Observacao = Normalizar(observacao);
+
+        RecalcularTotaisERateios();
+        MarcarAtualizado();
+    }
+
+    public void AtualizarItem(
+        Guid itemId,
+        int quantidade,
+        decimal precoUnitarioCompra)
+    {
+        GarantirRascunho();
+
+        if (itemId == Guid.Empty)
+            throw new ArgumentException(
+                "ID do item inválido.");
+
+        var item = _itens.FirstOrDefault(
+            i => i.Id == itemId);
+
+        if (item is null)
+            throw new KeyNotFoundException(
+                "Item da entrada não encontrado.");
+
+        item.AtualizarCompra(
+            quantidade,
+            precoUnitarioCompra);
+
+        RecalcularTotaisERateios();
+        MarcarAtualizado();
+    }
+
+    public EntradaCompraItem RemoverItem(Guid itemId)
+    {
+        GarantirRascunho();
+
+        if (itemId == Guid.Empty)
+            throw new ArgumentException(
+                "ID do item inválido.");
+
+        var item = _itens.FirstOrDefault(
+            i => i.Id == itemId);
+
+        if (item is null)
+            throw new KeyNotFoundException(
+                "Item da entrada não encontrado.");
+
+        _itens.Remove(item);
+
+        RecalcularTotaisERateios();
+        MarcarAtualizado();
+
+        return item;
+    }
+
     public void ValidarConfirmacao(DateTime dataConfirmacaoUtc)
     {
         ValidarConfirmacaoInterno(dataConfirmacaoUtc);

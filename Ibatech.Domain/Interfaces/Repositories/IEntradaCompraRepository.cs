@@ -21,5 +21,9 @@ public interface IEntradaCompraRepository
         string numeroDocumento,
         CancellationToken ct = default);
 
-    void AdicionarItem(EntradaCompraItem item);
+    void AdicionarItem(
+        EntradaCompraItem item);
+
+    void RemoverItem(
+        EntradaCompraItem item);
 }

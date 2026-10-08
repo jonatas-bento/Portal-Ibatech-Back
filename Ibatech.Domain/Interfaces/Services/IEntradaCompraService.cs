@@ -16,9 +16,28 @@ public interface IEntradaCompraService
         Guid usuarioId,
         CancellationToken ct = default);
 
+    Task<EntradaCompraDetalheDto> AtualizarAsync(
+        Guid entradaId,
+        AtualizarEntradaCompraDto dto,
+        Guid usuarioId,
+        CancellationToken ct = default);
+
     Task<EntradaCompraDetalheDto> AdicionarItemAsync(
         Guid entradaId,
         AdicionarEntradaCompraItemDto dto,
+        Guid usuarioId,
+        CancellationToken ct = default);
+
+    Task<EntradaCompraDetalheDto> AtualizarItemAsync(
+        Guid entradaId,
+        Guid itemId,
+        AtualizarEntradaCompraItemDto dto,
+        Guid usuarioId,
+        CancellationToken ct = default);
+
+    Task<EntradaCompraDetalheDto> RemoverItemAsync(
+        Guid entradaId,
+        Guid itemId,
         Guid usuarioId,
         CancellationToken ct = default);
 

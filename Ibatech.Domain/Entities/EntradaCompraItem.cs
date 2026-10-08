@@ -40,19 +40,20 @@ public sealed class EntradaCompraItem : EntityBase
         decimal precoUnitarioCompra)
     {
         if (entradaCompraId == Guid.Empty)
-            throw new ArgumentException("EntradaCompraId é obrigatório.");
+            throw new ArgumentException(
+                "EntradaCompraId é obrigatório.");
 
         if (produtoId == Guid.Empty)
-            throw new ArgumentException("ProdutoId é obrigatório.");
+            throw new ArgumentException(
+                "ProdutoId é obrigatório.");
 
         if (string.IsNullOrWhiteSpace(nomeProduto))
-            throw new ArgumentException("Nome do produto é obrigatório.");
+            throw new ArgumentException(
+                "Nome do produto é obrigatório.");
 
-        if (quantidade <= 0)
-            throw new ArgumentException("Quantidade deve ser maior que zero.");
-
-        if (precoUnitarioCompra < 0)
-            throw new ArgumentException("Preço de compra não pode ser negativo.");
+        ValidarCompra(
+            quantidade,
+            precoUnitarioCompra);
 
         EntradaCompraId = entradaCompraId;
         ProdutoId = produtoId;
@@ -64,13 +65,25 @@ public sealed class EntradaCompraItem : EntityBase
         Quantidade = quantidade;
         PrecoUnitarioCompra = precoUnitarioCompra;
 
-        ValorTotalProduto =
-            Math.Round(
-                quantidade * precoUnitarioCompra,
-                2,
-                MidpointRounding.AwayFromZero);
+        RecalcularValorProduto();
 
         AplicarRateio(0, 0, 0);
+    }
+
+    internal void AtualizarCompra(
+        int quantidade,
+        decimal precoUnitarioCompra)
+    {
+        ValidarCompra(
+            quantidade,
+            precoUnitarioCompra);
+
+        Quantidade = quantidade;
+        PrecoUnitarioCompra = precoUnitarioCompra;
+
+        RecalcularValorProduto();
+
+        MarcarAtualizado();
     }
 
     internal void AplicarRateio(
@@ -79,13 +92,16 @@ public sealed class EntradaCompraItem : EntityBase
         decimal outrasDespesas)
     {
         if (valorFrete < 0)
-            throw new ArgumentException("Frete rateado não pode ser negativo.");
+            throw new ArgumentException(
+                "Frete rateado não pode ser negativo.");
 
         if (valorDesconto < 0)
-            throw new ArgumentException("Desconto rateado não pode ser negativo.");
+            throw new ArgumentException(
+                "Desconto rateado não pode ser negativo.");
 
         if (outrasDespesas < 0)
-            throw new ArgumentException("Outras despesas rateadas não podem ser negativas.");
+            throw new ArgumentException(
+                "Outras despesas rateadas não podem ser negativas.");
 
         var custoTotalEfetivo =
             ValorTotalProduto
@@ -108,6 +124,38 @@ public sealed class EntradaCompraItem : EntityBase
                 MidpointRounding.AwayFromZero);
 
         MarcarAtualizado();
+    }
+
+    private void RecalcularValorProduto()
+    {
+        ValorTotalProduto =
+            Math.Round(
+                Quantidade * PrecoUnitarioCompra,
+                2,
+                MidpointRounding.AwayFromZero);
+    }
+
+    private static void ValidarCompra(
+        int quantidade,
+        decimal precoUnitarioCompra)
+    {
+        if (quantidade <= 0)
+            throw new ArgumentException(
+                "Quantidade deve ser maior que zero.");
+
+        if (precoUnitarioCompra < 0)
+            throw new ArgumentException(
+                "Preço de compra não pode ser negativo.");
+
+        if (decimal.Round(
+                precoUnitarioCompra,
+                2,
+                MidpointRounding.AwayFromZero)
+            != precoUnitarioCompra)
+        {
+            throw new ArgumentException(
+                "Preço de compra não pode possuir mais de duas casas decimais.");
+        }
     }
 
     private static string? Normalizar(string? valor) =>

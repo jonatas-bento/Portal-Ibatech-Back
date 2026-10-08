@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ibatech.Repository.Implementations;
 
-public sealed class EntradaCompraRepository(IbatechDbContext context)
-    : RepositoryBase<EntradaCompra>(context), IEntradaCompraRepository
+public sealed class EntradaCompraRepository(
+    IbatechDbContext context)
+    : RepositoryBase<EntradaCompra>(context),
+      IEntradaCompraRepository
 {
     public async Task<EntradaCompra?> ObterComItensAsync(
         Guid id,
@@ -15,7 +17,9 @@ public sealed class EntradaCompraRepository(IbatechDbContext context)
         await DbSet
             .Include(x => x.Fornecedor)
             .Include(x => x.Itens)
-            .FirstOrDefaultAsync(x => x.Id == id, ct);
+            .FirstOrDefaultAsync(
+                x => x.Id == id,
+                ct);
 
     public async Task<EntradaCompra?> ObterDetalheAsync(
         Guid id,
@@ -24,7 +28,9 @@ public sealed class EntradaCompraRepository(IbatechDbContext context)
             .AsNoTracking()
             .Include(x => x.Fornecedor)
             .Include(x => x.Itens)
-            .FirstOrDefaultAsync(x => x.Id == id, ct);
+            .FirstOrDefaultAsync(
+                x => x.Id == id,
+                ct);
 
     public async Task<IReadOnlyCollection<EntradaCompra>> ListarAsync(
         CancellationToken ct = default) =>
@@ -42,10 +48,21 @@ public sealed class EntradaCompraRepository(IbatechDbContext context)
         await DbSet
             .AsNoTracking()
             .AnyAsync(
-                x => x.FornecedorId == fornecedorId &&
-                     x.NumeroDocumento == numeroDocumento.Trim(),
+                x =>
+                    x.FornecedorId == fornecedorId &&
+                    x.NumeroDocumento ==
+                        numeroDocumento.Trim(),
                 ct);
 
-    public void AdicionarItem(EntradaCompraItem item) =>
-        context.Set<EntradaCompraItem>().Add(item);
+    public void AdicionarItem(
+        EntradaCompraItem item) =>
+        context
+            .Set<EntradaCompraItem>()
+            .Add(item);
+
+    public void RemoverItem(
+        EntradaCompraItem item) =>
+        context
+            .Set<EntradaCompraItem>()
+            .Remove(item);
 }

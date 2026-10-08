@@ -43,6 +43,17 @@ public sealed class EntradasComprasController(
             entrada);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<EntradaCompraDetalheDto>> Atualizar(
+        Guid id,
+        AtualizarEntradaCompraDto dto,
+        CancellationToken ct) =>
+        Ok(await service.AtualizarAsync(
+            id,
+            dto,
+            ObterUsuarioId(),
+            ct));
+
     [HttpPost("{id:guid}/itens")]
     public async Task<ActionResult<EntradaCompraDetalheDto>> AdicionarItem(
         Guid id,
@@ -51,6 +62,30 @@ public sealed class EntradasComprasController(
         Ok(await service.AdicionarItemAsync(
             id,
             dto,
+            ObterUsuarioId(),
+            ct));
+
+    [HttpPut("{id:guid}/itens/{itemId:guid}")]
+    public async Task<ActionResult<EntradaCompraDetalheDto>> AtualizarItem(
+        Guid id,
+        Guid itemId,
+        AtualizarEntradaCompraItemDto dto,
+        CancellationToken ct) =>
+        Ok(await service.AtualizarItemAsync(
+            id,
+            itemId,
+            dto,
+            ObterUsuarioId(),
+            ct));
+
+    [HttpDelete("{id:guid}/itens/{itemId:guid}")]
+    public async Task<ActionResult<EntradaCompraDetalheDto>> RemoverItem(
+        Guid id,
+        Guid itemId,
+        CancellationToken ct) =>
+        Ok(await service.RemoverItemAsync(
+            id,
+            itemId,
             ObterUsuarioId(),
             ct));
 

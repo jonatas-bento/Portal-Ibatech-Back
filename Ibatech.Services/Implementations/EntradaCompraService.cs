@@ -95,6 +95,69 @@ public sealed class EntradaCompraService(
             ct);
     }
 
+    public async Task<EntradaCompraDetalheDto> AtualizarAsync(
+        Guid entradaId,
+        AtualizarEntradaCompraDto dto,
+        Guid usuarioId,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        await ValidarUsuarioOperacaoAsync(
+            usuarioId,
+            ct);
+
+        if (entradaId == Guid.Empty)
+            throw new ArgumentException(
+                "ID da entrada inválido.");
+
+        var entrada =
+            await entradaRepository.ObterComItensAsync(
+                entradaId,
+                ct);
+
+        if (entrada is null)
+            throw new KeyNotFoundException(
+                "Entrada de compra não encontrada.");
+
+        var numeroDocumento =
+            dto.NumeroDocumento?.Trim();
+
+        if (string.IsNullOrWhiteSpace(numeroDocumento))
+            throw new ArgumentException(
+                "Número do documento é obrigatório.");
+
+        var documentoDuplicado =
+            await entradaRepository
+                .ObterQueryable()
+                .AnyAsync(
+                    x =>
+                        x.Id != entrada.Id &&
+                        x.FornecedorId ==
+                            entrada.FornecedorId &&
+                        x.NumeroDocumento ==
+                            numeroDocumento,
+                    ct);
+
+        if (documentoDuplicado)
+            throw new InvalidOperationException(
+                "Já existe uma entrada com este documento para o fornecedor informado.");
+
+        entrada.AtualizarCabecalho(
+            numeroDocumento,
+            dto.DataEntrada,
+            dto.ValorFrete,
+            dto.ValorDesconto,
+            dto.OutrasDespesas,
+            dto.Observacao);
+
+        await uow.CommitAsync(ct);
+
+        return await ObterPorIdAsync(
+            entrada.Id,
+            ct);
+    }
+
     public async Task<EntradaCompraDetalheDto> AdicionarItemAsync(
         Guid entradaId,
         AdicionarEntradaCompraItemDto dto,
@@ -142,6 +205,87 @@ public sealed class EntradaCompraService(
             dto.PrecoUnitarioCompra);
 
         entradaRepository.AdicionarItem(item);
+
+        await uow.CommitAsync(ct);
+
+        return await ObterPorIdAsync(
+            entrada.Id,
+            ct);
+    }
+
+    public async Task<EntradaCompraDetalheDto> AtualizarItemAsync(
+        Guid entradaId,
+        Guid itemId,
+        AtualizarEntradaCompraItemDto dto,
+        Guid usuarioId,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        await ValidarUsuarioOperacaoAsync(
+            usuarioId,
+            ct);
+
+        if (entradaId == Guid.Empty)
+            throw new ArgumentException(
+                "ID da entrada inválido.");
+
+        if (itemId == Guid.Empty)
+            throw new ArgumentException(
+                "ID do item inválido.");
+
+        var entrada =
+            await entradaRepository.ObterComItensAsync(
+                entradaId,
+                ct);
+
+        if (entrada is null)
+            throw new KeyNotFoundException(
+                "Entrada de compra não encontrada.");
+
+        entrada.AtualizarItem(
+            itemId,
+            dto.Quantidade,
+            dto.PrecoUnitarioCompra);
+
+        await uow.CommitAsync(ct);
+
+        return await ObterPorIdAsync(
+            entrada.Id,
+            ct);
+    }
+
+    public async Task<EntradaCompraDetalheDto> RemoverItemAsync(
+        Guid entradaId,
+        Guid itemId,
+        Guid usuarioId,
+        CancellationToken ct = default)
+    {
+        await ValidarUsuarioOperacaoAsync(
+            usuarioId,
+            ct);
+
+        if (entradaId == Guid.Empty)
+            throw new ArgumentException(
+                "ID da entrada inválido.");
+
+        if (itemId == Guid.Empty)
+            throw new ArgumentException(
+                "ID do item inválido.");
+
+        var entrada =
+            await entradaRepository.ObterComItensAsync(
+                entradaId,
+                ct);
+
+        if (entrada is null)
+            throw new KeyNotFoundException(
+                "Entrada de compra não encontrada.");
+
+        var item =
+            entrada.RemoverItem(itemId);
+
+        entradaRepository.RemoverItem(item);
 
         await uow.CommitAsync(ct);
 
